@@ -1,0 +1,199 @@
+<!DOCTYPE html>
+<html lang="zh-cmn-Hans">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <meta http-equiv="X-UA-Compatible" content="ie=edge">
+  <title>负载均衡算法 | Why So Serious?</title>
+  
+    <link rel="icon" href="/blog/assets/smile.JPG">
+  
+  
+  
+  <!--link rel="stylesheet" href="//cdn.jsdelivr.net/highlight.js/9.10.0/styles/github-gist.min.css"-->
+  
+<link rel="stylesheet" href="//cdn.jsdelivr.net/highlight.js/9.10.0/styles/github-gist.min.css">
+
+  
+<link rel="stylesheet" href="/blog/css/style.css">
+
+<meta name="generator" content="Hexo 5.3.0"></head>
+
+<body>
+<div class="Shell">
+    <aside class='SideBar'>
+    <section class='avatar' style="background-image: url(/blog/assets/header.png)">
+        <div class='av-pic' style="background-image: url(/blog/assets/avatar.jpg)">
+        </div>
+    </section>
+    <section class='menu'>
+        <div>Why So Serious?</div>
+        
+        <ul>
+          
+            <a href="/blog/" class="Btn">
+              <li>Home</li>
+            </a>  
+          
+            <a href="/blog/categories/" class="Btn">
+              <li>Categories</li>
+            </a>  
+          
+            <a href="/blog/about/" class="Btn">
+              <li>About</li>
+            </a>  
+          
+        </ul>
+    </section>
+    <section class="media">
+        
+    </section>
+</aside>
+
+    <div class="container">
+        <div data-pager-shell>
+            <div>
+  <article class='ContentView'>
+    <header class='PageTitle'>
+        <h1>负载均衡算法</h1>
+    </header>
+
+    <section>
+      <h3 id="负载均衡算法"><a href="#负载均衡算法" class="headerlink" title="负载均衡算法"></a>负载均衡算法</h3><h4 id="简介"><a href="#简介" class="headerlink" title="简介"></a>简介</h4><p>负载均衡的职责是将网络请求或者其他形式的负载均摊到不同的机器上，避免集群中部分服务器压力过大而另一些服务器空闲的情况。通过负载均衡，可以让每台服务器获取到适合自己处理能力的负载，为高负载服务器分流的同时，也可以避免资源浪费。以下将分析几种不同的负载均衡算法。</p>
+<a id="more"></a>
+
+<h4 id="随机选择算法"><a href="#随机选择算法" class="headerlink" title="随机选择算法"></a>随机选择算法</h4><p>随机选择算法的核心思想是基于服务器权重（权重来源于部署配置，可根据服务器的资源和配置设置权重）分配负载，权重高的机器获得负载的机会更大。举例来说，假设有三台主机a,b,c，其权重分别为2,5,1，那么一个负载抵达集群后，a获得该负载的概率为2/8，b获得的概率的5/8，c获得的概率为1/8，在这种情况下，当有足够多的负载抵达集群时，a,b,c三台机器处理负载的比例也约为2:5:1</p>
+<p><strong><em>算法实现</em></strong></p>
+<p>假设服务器数组为host[]，其对应的权重数组为weight[]</p>
+<figure class="highlight java"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br><span class="line">18</span><br><span class="line">19</span><br><span class="line">20</span><br><span class="line">21</span><br><span class="line">22</span><br><span class="line">23</span><br><span class="line">24</span><br><span class="line">25</span><br><span class="line">26</span><br><span class="line">27</span><br></pre></td><td class="code"><pre><code class="hljs java"><span class="hljs-function"><span class="hljs-keyword">public</span> String <span class="hljs-title">selectHostRandom</span><span class="hljs-params">(String[] hosts, <span class="hljs-keyword">int</span>[] weights)</span> </span>&#123;<br>        Random random = <span class="hljs-keyword">new</span> Random();<br>        <span class="hljs-keyword">int</span> length = hosts.length;<br>        <span class="hljs-keyword">int</span> totalWeight = <span class="hljs-number">0</span>;<br>        <span class="hljs-keyword">boolean</span> sameWeight = <span class="hljs-keyword">true</span>;<br>        <span class="hljs-comment">//计算服务器总权重并判断每个服务器的权重是否相同</span><br>        <span class="hljs-keyword">for</span> (<span class="hljs-keyword">int</span> i = <span class="hljs-number">0</span>; i &lt; length; i++) &#123;<br>            <span class="hljs-keyword">int</span> weight = weights[i];<br>            totalWeight += weight;<br>            <span class="hljs-keyword">if</span> (sameWeight &amp;&amp; i &gt; <span class="hljs-number">0</span> &amp;&amp; weight != weights[i - <span class="hljs-number">1</span>]) &#123;<br>                sameWeight = <span class="hljs-keyword">false</span>;<br>            &#125;<br>        &#125;<br>        <span class="hljs-keyword">if</span> (totalWeight &gt; <span class="hljs-number">0</span> &amp;&amp; !sameWeight) &#123;<br>            <span class="hljs-comment">//随机获取一个[0,weight)区间内的数</span><br>            <span class="hljs-keyword">int</span> offset = random.nextInt(totalWeight);<br>            <span class="hljs-comment">//offset循环减去服务器权重，当offset小于0时，返回当前服务器</span><br>            <span class="hljs-keyword">for</span> (<span class="hljs-keyword">int</span> i = <span class="hljs-number">0</span>; i &lt; length; i++) &#123;<br>                offset -= weights[i];<br>                <span class="hljs-keyword">if</span> (offset &lt; <span class="hljs-number">0</span>) &#123;<br>                    <span class="hljs-keyword">return</span> hosts[i];<br>                &#125;<br>            &#125;<br>        &#125;<br>        <span class="hljs-comment">//若所有服务器的权重都相同，则随机选择一个</span><br>        <span class="hljs-keyword">return</span> hosts[random.nextInt(length)];<br>    &#125;<br></code></pre></td></tr></table></figure>
+<p><strong><em>算法分析</em></strong></p>
+<p>该算法思想简单，多次请求后负载基本均衡，但是当请求数较少时，由于依赖random函数，可能会出现随机数集中导致请求分配不均衡的情况。</p>
+<h4 id="简单轮询算法"><a href="#简单轮询算法" class="headerlink" title="简单轮询算法"></a>简单轮询算法</h4><p>该算法的主要思想是以轮询的形式将请求平均分配到每台服务器上，即将负载轮流分配给每台服务器。举例来说，若有三台服务器a,b,c，5次请求分别落在服务器a,b,c,a,b上。</p>
+<p><strong><em>算法实现</em></strong></p>
+<p>假设服务器数组为host[]，其对应的权重数组为weight[]</p>
+<figure class="highlight java"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br><span class="line">18</span><br><span class="line">19</span><br></pre></td><td class="code"><pre><code class="hljs java"><span class="hljs-function"><span class="hljs-keyword">public</span> String <span class="hljs-title">selectHostRoundRobin</span><span class="hljs-params">(String[] hosts, <span class="hljs-keyword">int</span>[] weight)</span> </span>&#123;<br>        <span class="hljs-keyword">int</span> length = hosts.length;<br>  			<span class="hljs-comment">//保存当前服务器的总权重，在具体的算法中，该数组应该为全局变量保存服务器当前的权重</span><br>        <span class="hljs-keyword">int</span>[] currentWeight = <span class="hljs-keyword">new</span> <span class="hljs-keyword">int</span>[length];<br>        <span class="hljs-keyword">int</span> totalWeight = <span class="hljs-number">0</span>;<br>        <span class="hljs-keyword">int</span> lowWeight = <span class="hljs-number">0</span>;<br>        <span class="hljs-comment">//当前权重最小的服务器下标</span><br>  			<span class="hljs-keyword">int</span> index = <span class="hljs-number">0</span>;<br>        <span class="hljs-keyword">for</span> (<span class="hljs-keyword">int</span> i = <span class="hljs-number">0</span>; i &lt; length; i++) &#123;<br>            totalWeight += weight[i];<br>            currentWeight[i] += weight[i];<br>            <span class="hljs-keyword">if</span> (i == <span class="hljs-number">0</span> || lowWeight &gt; currentWeight[i]) &#123;<br>                lowWeight = currentWeight[i];<br>                index = i;<br>            &#125;<br>        &#125;<br>        currentWeight[index] = currentWeight[index] + totalWeight;<br>        <span class="hljs-keyword">return</span> hosts[index];<br>    &#125;<br></code></pre></td></tr></table></figure>
+<p><strong><em>算法分析</em></strong></p>
+<p>该算法思想简单，容易实现，每次选择当前权重最小的服务器，然后将当前权重更新为当前权重与总权重之和，此时该服务器的当前权重成为最大，保证了下一次的选择中不会被选中。但是这种算法只适用于机器配置或性能完全相同的集群中，否则性能差的机器与性能好的机器处理相同数据量的负载，造成机器负载过大或资源浪费。</p>
+<h4 id="加权轮询算法"><a href="#加权轮询算法" class="headerlink" title="加权轮询算法"></a>加权轮询算法</h4><p>加权轮询算法在简单轮询算法的基础上，对轮询过程进行加权，加权后使每台服务器能够得到的请求数比例，接近或者等于其权重比。举例来说，若三台服务器a,b,c的权重分别为5,1,1，那么在7次请求中，a将收到其中的5次，b将收到其中的1次，c将收到其中的1次，且请求抵达的顺序类似于a,a,b,a,c,a,a这种乱序，而非a,a,a,a,a,b,c这种在短时间内抵达同一服务器的情况。</p>
+<p><em>以下算法摘自dubbo(负载均衡)</em></p>
+<p>每个服务器对应两个权重，分别为weight和currentWeight，其中weight是固定的(即部署服务器时指定的权重)，currentWeight时动态调整的，初始值为0。当有新的请求抵达时，遍历服务器列表，让它的currentWeight加上自身权重，遍历完成后，找到最大的currentWeight并将其减去权重总和，然后返回相应的服务器即可。</p>
+<p>如服务器a,b,c对应的权重分别为5,1,1，7次请求依次进入负载均衡的选择过程如下：</p>
+<table>
+<thead>
+<tr>
+<th>请求编号</th>
+<th>currentWeight数组</th>
+<th>选择结果</th>
+<th>最大值减去权重和</th>
+</tr>
+</thead>
+<tbody><tr>
+<td>0</td>
+<td>[0, 0, 0]</td>
+<td>/</td>
+<td>/</td>
+</tr>
+<tr>
+<td>1</td>
+<td>[5, 1, 1]</td>
+<td>a</td>
+<td>[-2, 1, 1]</td>
+</tr>
+<tr>
+<td>2</td>
+<td>[3, 2, 2]</td>
+<td>a</td>
+<td>[-4, 2, 2]</td>
+</tr>
+<tr>
+<td>3</td>
+<td>[1, 3, 3]</td>
+<td>b</td>
+<td>[1, -4, 3]</td>
+</tr>
+<tr>
+<td>4</td>
+<td>[6, -3, 4]</td>
+<td>a</td>
+<td>[-1, -3, 4]</td>
+</tr>
+<tr>
+<td>5</td>
+<td>[4, -2, 5]</td>
+<td>c</td>
+<td>[4, -2, -2]</td>
+</tr>
+<tr>
+<td>6</td>
+<td>[9, -1, -1]</td>
+<td>a</td>
+<td>[2, -1, -1]</td>
+</tr>
+<tr>
+<td>7</td>
+<td>[7, 0 , 0]</td>
+<td>a</td>
+<td>[0, 0, 0]</td>
+</tr>
+<tr>
+<td></td>
+<td></td>
+<td></td>
+<td></td>
+</tr>
+</tbody></table>
+<p>为何上述过程可以达到加权轮询的目的？</p>
+<p>条件：</p>
+<ol>
+<li>显然，currentWeight的总和总是为7，即totalWeight。则减去最大权重后的currntWeight数组和为0。（因为currentWeight中的最大元素减去totalWeight，然后每个元素分别再加上weight，而weigth的总和就是totalWeight，即减去totalWeight后又加了回来，总和维持不变）</li>
+<li>减去最大权重和之后的currentWeight中元素的值总在(-7， +7)之间。（数学归纳法可证）</li>
+</ol>
+<p>推导：<a target="_blank" rel="noopener" href="https://github.com/Tinywan/load-balancing">参考</a></p>
+<p><strong><em>算法实现</em></strong></p>
+<figure class="highlight java"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br><span class="line">18</span><br><span class="line">19</span><br><span class="line">20</span><br><span class="line">21</span><br><span class="line">22</span><br><span class="line">23</span><br><span class="line">24</span><br><span class="line">25</span><br><span class="line">26</span><br><span class="line">27</span><br><span class="line">28</span><br><span class="line">29</span><br><span class="line">30</span><br><span class="line">31</span><br><span class="line">32</span><br><span class="line">33</span><br><span class="line">34</span><br><span class="line">35</span><br><span class="line">36</span><br><span class="line">37</span><br><span class="line">38</span><br><span class="line">39</span><br><span class="line">40</span><br><span class="line">41</span><br><span class="line">42</span><br><span class="line">43</span><br><span class="line">44</span><br><span class="line">45</span><br><span class="line">46</span><br><span class="line">47</span><br><span class="line">48</span><br><span class="line">49</span><br><span class="line">50</span><br><span class="line">51</span><br><span class="line">52</span><br><span class="line">53</span><br><span class="line">54</span><br><span class="line">55</span><br><span class="line">56</span><br><span class="line">57</span><br><span class="line">58</span><br><span class="line">59</span><br><span class="line">60</span><br><span class="line">61</span><br><span class="line">62</span><br><span class="line">63</span><br><span class="line">64</span><br><span class="line">65</span><br><span class="line">66</span><br><span class="line">67</span><br><span class="line">68</span><br><span class="line">69</span><br><span class="line">70</span><br><span class="line">71</span><br><span class="line">72</span><br><span class="line">73</span><br><span class="line">74</span><br><span class="line">75</span><br><span class="line">76</span><br><span class="line">77</span><br><span class="line">78</span><br><span class="line">79</span><br><span class="line">80</span><br><span class="line">81</span><br><span class="line">82</span><br><span class="line">83</span><br><span class="line">84</span><br><span class="line">85</span><br><span class="line">86</span><br><span class="line">87</span><br><span class="line">88</span><br><span class="line">89</span><br><span class="line">90</span><br><span class="line">91</span><br><span class="line">92</span><br><span class="line">93</span><br><span class="line">94</span><br><span class="line">95</span><br><span class="line">96</span><br><span class="line">97</span><br><span class="line">98</span><br><span class="line">99</span><br><span class="line">100</span><br><span class="line">101</span><br><span class="line">102</span><br><span class="line">103</span><br><span class="line">104</span><br><span class="line">105</span><br><span class="line">106</span><br><span class="line">107</span><br><span class="line">108</span><br><span class="line">109</span><br><span class="line">110</span><br><span class="line">111</span><br><span class="line">112</span><br><span class="line">113</span><br><span class="line">114</span><br><span class="line">115</span><br><span class="line">116</span><br><span class="line">117</span><br><span class="line">118</span><br><span class="line">119</span><br><span class="line">120</span><br><span class="line">121</span><br><span class="line">122</span><br><span class="line">123</span><br><span class="line">124</span><br><span class="line">125</span><br><span class="line">126</span><br><span class="line">127</span><br><span class="line">128</span><br><span class="line">129</span><br><span class="line">130</span><br><span class="line">131</span><br><span class="line">132</span><br><span class="line">133</span><br><span class="line">134</span><br><span class="line">135</span><br><span class="line">136</span><br><span class="line">137</span><br><span class="line">138</span><br><span class="line">139</span><br><span class="line">140</span><br><span class="line">141</span><br><span class="line">142</span><br><span class="line">143</span><br><span class="line">144</span><br><span class="line">145</span><br><span class="line">146</span><br><span class="line">147</span><br><span class="line">148</span><br><span class="line">149</span><br><span class="line">150</span><br></pre></td><td class="code"><pre><code class="hljs java"><span class="hljs-keyword">public</span> <span class="hljs-class"><span class="hljs-keyword">class</span> <span class="hljs-title">RoundRobinLoadBalance</span> <span class="hljs-keyword">extends</span> <span class="hljs-title">AbstractLoadBalance</span> </span>&#123;<br>    <span class="hljs-keyword">public</span> <span class="hljs-keyword">static</span> <span class="hljs-keyword">final</span> String NAME = <span class="hljs-string">&quot;roundrobin&quot;</span>;<br>    <br>    <span class="hljs-keyword">private</span> <span class="hljs-keyword">static</span> <span class="hljs-keyword">int</span> RECYCLE_PERIOD = <span class="hljs-number">60000</span>;<br>    <br>    <span class="hljs-keyword">protected</span> <span class="hljs-keyword">static</span> <span class="hljs-class"><span class="hljs-keyword">class</span> <span class="hljs-title">WeightedRoundRobin</span> </span>&#123;<br>        <span class="hljs-comment">// 服务提供者权重</span><br>        <span class="hljs-keyword">private</span> <span class="hljs-keyword">int</span> weight;<br>        <span class="hljs-comment">// 当前权重</span><br>        <span class="hljs-keyword">private</span> AtomicLong current = <span class="hljs-keyword">new</span> AtomicLong(<span class="hljs-number">0</span>);<br>        <span class="hljs-comment">// 最后一次更新时间</span><br>        <span class="hljs-keyword">private</span> <span class="hljs-keyword">long</span> lastUpdate;<br>        <br>        <span class="hljs-function"><span class="hljs-keyword">public</span> <span class="hljs-keyword">void</span> <span class="hljs-title">setWeight</span><span class="hljs-params">(<span class="hljs-keyword">int</span> weight)</span> </span>&#123;<br>            <span class="hljs-keyword">this</span>.weight = weight;<br>            <span class="hljs-comment">// 初始情况下，current = 0</span><br>            current.set(<span class="hljs-number">0</span>);<br>        &#125;<br>        <span class="hljs-function"><span class="hljs-keyword">public</span> <span class="hljs-keyword">long</span> <span class="hljs-title">increaseCurrent</span><span class="hljs-params">()</span> </span>&#123;<br>            <span class="hljs-comment">// current = current + weight；</span><br>            <span class="hljs-keyword">return</span> current.addAndGet(weight);<br>        &#125;<br>        <span class="hljs-function"><span class="hljs-keyword">public</span> <span class="hljs-keyword">void</span> <span class="hljs-title">sel</span><span class="hljs-params">(<span class="hljs-keyword">int</span> total)</span> </span>&#123;<br>            <span class="hljs-comment">// current = current - total;</span><br>            current.addAndGet(-<span class="hljs-number">1</span> * total);<br>        &#125;<br>    &#125;<br><br>    <span class="hljs-comment">// 嵌套 Map 结构，存储的数据结构示例如下：</span><br>    <span class="hljs-comment">// &#123;</span><br>    <span class="hljs-comment">//     &quot;UserService.query&quot;: &#123;</span><br>    <span class="hljs-comment">//         &quot;url1&quot;: WeightedRoundRobin@123, </span><br>    <span class="hljs-comment">//         &quot;url2&quot;: WeightedRoundRobin@456, </span><br>    <span class="hljs-comment">//     &#125;,</span><br>    <span class="hljs-comment">//     &quot;UserService.update&quot;: &#123;</span><br>    <span class="hljs-comment">//         &quot;url1&quot;: WeightedRoundRobin@123, </span><br>    <span class="hljs-comment">//         &quot;url2&quot;: WeightedRoundRobin@456,</span><br>    <span class="hljs-comment">//     &#125;</span><br>    <span class="hljs-comment">// &#125;</span><br>    <span class="hljs-comment">// 最外层为服务类名 + 方法名，第二层为 url 到 WeightedRoundRobin 的映射关系。</span><br>    <span class="hljs-comment">// 这里我们可以将 url 看成是服务提供者的 id</span><br>    <span class="hljs-keyword">private</span> ConcurrentMap&lt;String, ConcurrentMap&lt;String, WeightedRoundRobin&gt;&gt; methodWeightMap = <span class="hljs-keyword">new</span> ConcurrentHashMap&lt;String, ConcurrentMap&lt;String, WeightedRoundRobin&gt;&gt;();<br>    <br>    <span class="hljs-comment">// 原子更新锁</span><br>    <span class="hljs-keyword">private</span> AtomicBoolean updateLock = <span class="hljs-keyword">new</span> AtomicBoolean();<br>    <br>    <span class="hljs-meta">@Override</span><br>    <span class="hljs-keyword">protected</span> &lt;T&gt; <span class="hljs-function">Invoker&lt;T&gt; <span class="hljs-title">doSelect</span><span class="hljs-params">(List&lt;Invoker&lt;T&gt;&gt; invokers, URL url, Invocation invocation)</span> </span>&#123;<br>        String key = invokers.get(<span class="hljs-number">0</span>).getUrl().getServiceKey() + <span class="hljs-string">&quot;.&quot;</span> + invocation.getMethodName();<br>        <span class="hljs-comment">// 获取 url 到 WeightedRoundRobin 映射表，如果为空，则创建一个新的</span><br>        ConcurrentMap&lt;String, WeightedRoundRobin&gt; map = methodWeightMap.get(key);<br>        <span class="hljs-keyword">if</span> (map == <span class="hljs-keyword">null</span>) &#123;<br>            methodWeightMap.putIfAbsent(key, <span class="hljs-keyword">new</span> ConcurrentHashMap&lt;String, WeightedRoundRobin&gt;());<br>            map = methodWeightMap.get(key);<br>        &#125;<br>        <span class="hljs-keyword">int</span> totalWeight = <span class="hljs-number">0</span>;<br>        <span class="hljs-keyword">long</span> maxCurrent = Long.MIN_VALUE;<br>        <br>        <span class="hljs-comment">// 获取当前时间</span><br>        <span class="hljs-keyword">long</span> now = System.currentTimeMillis();<br>        Invoker&lt;T&gt; selectedInvoker = <span class="hljs-keyword">null</span>;<br>        WeightedRoundRobin selectedWRR = <span class="hljs-keyword">null</span>;<br><br>        <span class="hljs-comment">// 下面这个循环主要做了这样几件事情：</span><br>        <span class="hljs-comment">//   1. 遍历 Invoker 列表，检测当前 Invoker 是否有</span><br>        <span class="hljs-comment">//      相应的 WeightedRoundRobin，没有则创建</span><br>        <span class="hljs-comment">//   2. 检测 Invoker 权重是否发生了变化，若变化了，</span><br>        <span class="hljs-comment">//      则更新 WeightedRoundRobin 的 weight 字段</span><br>        <span class="hljs-comment">//   3. 让 current 字段加上自身权重，等价于 current += weight</span><br>        <span class="hljs-comment">//   4. 设置 lastUpdate 字段，即 lastUpdate = now</span><br>        <span class="hljs-comment">//   5. 寻找具有最大 current 的 Invoker，以及 Invoker 对应的 WeightedRoundRobin，</span><br>        <span class="hljs-comment">//      暂存起来，留作后用</span><br>        <span class="hljs-comment">//   6. 计算权重总和</span><br>        <span class="hljs-keyword">for</span> (Invoker&lt;T&gt; invoker : invokers) &#123;<br>            String identifyString = invoker.getUrl().toIdentityString();<br>            WeightedRoundRobin weightedRoundRobin = map.get(identifyString);<br>            <span class="hljs-keyword">int</span> weight = getWeight(invoker, invocation);<br>            <span class="hljs-keyword">if</span> (weight &lt; <span class="hljs-number">0</span>) &#123;<br>                weight = <span class="hljs-number">0</span>;<br>            &#125;<br>            <br>            <span class="hljs-comment">// 检测当前 Invoker 是否有对应的 WeightedRoundRobin，没有则创建</span><br>            <span class="hljs-keyword">if</span> (weightedRoundRobin == <span class="hljs-keyword">null</span>) &#123;<br>                weightedRoundRobin = <span class="hljs-keyword">new</span> WeightedRoundRobin();<br>                <span class="hljs-comment">// 设置 Invoker 权重</span><br>                weightedRoundRobin.setWeight(weight);<br>                <span class="hljs-comment">// 存储 url 唯一标识 identifyString 到 weightedRoundRobin 的映射关系</span><br>                map.putIfAbsent(identifyString, weightedRoundRobin);<br>                weightedRoundRobin = map.get(identifyString);<br>            &#125;<br>            <span class="hljs-comment">// Invoker 权重不等于 WeightedRoundRobin 中保存的权重，说明权重变化了，此时进行更新</span><br>            <span class="hljs-keyword">if</span> (weight != weightedRoundRobin.getWeight()) &#123;<br>                weightedRoundRobin.setWeight(weight);<br>            &#125;<br>            <br>            <span class="hljs-comment">// 让 current 加上自身权重，等价于 current += weight</span><br>            <span class="hljs-keyword">long</span> cur = weightedRoundRobin.increaseCurrent();<br>            <span class="hljs-comment">// 设置 lastUpdate，表示近期更新过</span><br>            weightedRoundRobin.setLastUpdate(now);<br>            <span class="hljs-comment">// 找出最大的 current </span><br>            <span class="hljs-keyword">if</span> (cur &gt; maxCurrent) &#123;<br>                maxCurrent = cur;<br>                <span class="hljs-comment">// 将具有最大 current 权重的 Invoker 赋值给 selectedInvoker</span><br>                selectedInvoker = invoker;<br>                <span class="hljs-comment">// 将 Invoker 对应的 weightedRoundRobin 赋值给 selectedWRR，留作后用</span><br>                selectedWRR = weightedRoundRobin;<br>            &#125;<br>            <br>            <span class="hljs-comment">// 计算权重总和</span><br>            totalWeight += weight;<br>        &#125;<br><br>        <span class="hljs-comment">// 对 &lt;identifyString, WeightedRoundRobin&gt; 进行检查，过滤掉长时间未被更新的节点。</span><br>        <span class="hljs-comment">// 该节点可能挂了，invokers 中不包含该节点，所以该节点的 lastUpdate 长时间无法被更新。</span><br>        <span class="hljs-comment">// 若未更新时长超过阈值后，就会被移除掉，默认阈值为60秒。</span><br>        <span class="hljs-keyword">if</span> (!updateLock.get() &amp;&amp; invokers.size() != map.size()) &#123;<br>            <span class="hljs-keyword">if</span> (updateLock.compareAndSet(<span class="hljs-keyword">false</span>, <span class="hljs-keyword">true</span>)) &#123;<br>                <span class="hljs-keyword">try</span> &#123;<br>                    ConcurrentMap&lt;String, WeightedRoundRobin&gt; newMap = <span class="hljs-keyword">new</span> ConcurrentHashMap&lt;String, WeightedRoundRobin&gt;();<br>                    <span class="hljs-comment">// 拷贝</span><br>                    newMap.putAll(map);<br>                    <br>                    <span class="hljs-comment">// 遍历修改，即移除过期记录</span><br>                    Iterator&lt;Entry&lt;String, WeightedRoundRobin&gt;&gt; it = newMap.entrySet().iterator();<br>                    <span class="hljs-keyword">while</span> (it.hasNext()) &#123;<br>                        Entry&lt;String, WeightedRoundRobin&gt; item = it.next();<br>                        <span class="hljs-keyword">if</span> (now - item.getValue().getLastUpdate() &gt; RECYCLE_PERIOD) &#123;<br>                            it.remove();<br>                        &#125;<br>                    &#125;<br>                    <br>                    <span class="hljs-comment">// 更新引用</span><br>                    methodWeightMap.put(key, newMap);<br>                &#125; <span class="hljs-keyword">finally</span> &#123;<br>                    updateLock.set(<span class="hljs-keyword">false</span>);<br>                &#125;<br>            &#125;<br>        &#125;<br><br>        <span class="hljs-keyword">if</span> (selectedInvoker != <span class="hljs-keyword">null</span>) &#123;<br>            <span class="hljs-comment">// 让 current 减去权重总和，等价于 current -= totalWeight</span><br>            selectedWRR.sel(totalWeight);<br>            <span class="hljs-comment">// 返回具有最大 current 的 Invoker</span><br>            <span class="hljs-keyword">return</span> selectedInvoker;<br>        &#125;<br>        <br>        <span class="hljs-comment">// should not happen here</span><br>        <span class="hljs-keyword">return</span> invokers.get(<span class="hljs-number">0</span>);<br>    &#125;<br>&#125;<br></code></pre></td></tr></table></figure>
+
+
+<h4 id="一致性Hash算法"><a href="#一致性Hash算法" class="headerlink" title="一致性Hash算法"></a>一致性Hash算法</h4><p>根据请求信息为缓存节点生成一个hash，并将这个hash投射到[0, 2^32 - 1]​的圆环上。当有请求进来时，则为缓存项的key生成一个hash值，然后查找第一个大于或等于该hash值的缓存节点，并到这个节点中写入缓存项，如果当前节点挂了，则在下一次请求时为缓存项查找另一个大于其hash值的缓存节点。为了防止数据倾斜问题，一般会引入虚拟节点进行处理。</p>
+
+
+      
+
+    </section>
+    
+      <section class='ArticleMeta'>
+          <div>
+            发布于&nbsp;
+            <time datetime="2021-02-01T09:47:15.000Z" itemprop="datePublished">
+              2021-02-01
+            </time>
+          </div>
+          
+      </section>
+    
+    
+</article>
+
+  
+</div>
+
+            <footer>
+    <div>© 2021 - Levi </div>
+    <div>
+        <span>
+            Powered by <a target="_blank" rel="noopener" href="https://hexo.io">Hexo</a>
+        </span>
+    </div>
+</footer>
+
+        </div>
+    </div>
+</div>
+
+<script src="/blog/js/pager/dist/singlepager.js"></script>
+
+<script>
+var sp = new Pager('data-pager-shell')
+
+</script>
+</body>
+</html>
