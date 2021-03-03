@@ -4,7 +4,7 @@
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
   <meta http-equiv="X-UA-Compatible" content="ie=edge">
-  <title>Why So Serious?</title>
+  <title>Spring Cloud中@EnableEurekaServer如何启动Eureka Server | Why So Serious?</title>
   
     <link rel="icon" href="/blog/assets/smile.JPG">
   
@@ -52,39 +52,14 @@
 
     <div class="container">
         <div data-pager-shell>
-            <ul class="Index">
-  
-  
-    <li>
-      <article class='ListView'>
-    <header class="title">
-      
-        <h1>
-          <a href="/blog/2021/03/03/Spring-Cloud%E4%B8%AD-EnableEurekaServer%E5%A6%82%E4%BD%95%E5%90%AF%E5%8A%A8Eureka-Server/">Spring Cloud中@EnableEurekaServer如何启动Eureka Server</a>
-        </h1>
-      
-      <div class='ListMeta'>
-  <time datetime="2021-03-03T10:01:51.000Z" itemprop="datePublished">
-    2021-03-03
-  </time>
-  
-  
-  / 
-  <ul>
-    
-  <li class="meta-text">
-  { <a href="/blog/categories/SpringCloud/">SpringCloud</a> }
-  </li>
-
-
-  </ul>
-  
-</div>
-
+            <div>
+  <article class='ContentView'>
+    <header class='PageTitle'>
+        <h1>Spring Cloud中@EnableEurekaServer如何启动Eureka Server</h1>
     </header>
-    <div>
-      
-        <h3 id="Spring-Cloud中-EnableEurekaServer如何启动Eureka-Server"><a href="#Spring-Cloud中-EnableEurekaServer如何启动Eureka-Server" class="headerlink" title="Spring Cloud中@EnableEurekaServer如何启动Eureka Server"></a>Spring Cloud中@EnableEurekaServer如何启动Eureka Server</h3><p>在创建Eureka注册中心时，一般使用@EnableEurekaServer注解实现，那么这个注解是如何完成启动工作的呢？</p>
+
+    <section>
+      <h3 id="Spring-Cloud中-EnableEurekaServer如何启动Eureka-Server"><a href="#Spring-Cloud中-EnableEurekaServer如何启动Eureka-Server" class="headerlink" title="Spring Cloud中@EnableEurekaServer如何启动Eureka Server"></a>Spring Cloud中@EnableEurekaServer如何启动Eureka Server</h3><p>在创建Eureka注册中心时，一般使用@EnableEurekaServer注解实现，那么这个注解是如何完成启动工作的呢？</p>
 <p><strong>@EnableEurekaServer注解源码</strong></p>
 <figure class="highlight java"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br></pre></td><td class="code"><pre><code class="hljs java"><span class="hljs-comment">/**</span><br><span class="hljs-comment"> * Annotation to activate Eureka Server related configuration.</span><br><span class="hljs-comment"> * &#123;<span class="hljs-doctag">@link</span> EurekaServerAutoConfiguration&#125;</span><br><span class="hljs-comment"> * </span><br><span class="hljs-comment"> * <span class="hljs-doctag">@author</span> Dave Syer</span><br><span class="hljs-comment"> * <span class="hljs-doctag">@author</span> Biju Kunjummen</span><br><span class="hljs-comment"> *</span><br><span class="hljs-comment"> */</span><br><br><span class="hljs-meta">@Target(ElementType.TYPE)</span><br><span class="hljs-meta">@Retention(RetentionPolicy.RUNTIME)</span><br><span class="hljs-meta">@Documented</span><br><span class="hljs-meta">@Import(EurekaServerMarkerConfiguration.class)</span><br><span class="hljs-keyword">public</span> <span class="hljs-meta">@interface</span> EnableEurekaServer &#123;<br><br>&#125;<br></code></pre></td></tr></table></figure>
 <p>源码注释说”这是注解用来激活用EurekaServerAutoConfiguration配置的Eureka Server”。但@EnableEurekaServer注解的源码中并没有涉及到EurekaServerAutoConfiguration，却使用@Import注解导入了一个名为EurekaServerMarkerConfiguration的类。</p>
@@ -113,156 +88,26 @@
 <li>将Eureka Server上下文信息绑定到给定的Servlet上下文中</li>
 </ul>
 
+
       
-    </div>
+
+    </section>
+    
+      <section class='ArticleMeta'>
+          <div>
+            发布于&nbsp;
+            <time datetime="2021-03-03T10:01:51.000Z" itemprop="datePublished">
+              2021-03-03
+            </time>
+          </div>
+          
+      </section>
+    
+    
 </article>
 
-    </li>
-  
-    <li>
-      <article class='ListView'>
-    <header class="title">
-      
-        <h1>
-          <a href="/blog/2021/02/01/%E8%B4%9F%E8%BD%BD%E5%9D%87%E8%A1%A1%E7%AE%97%E6%B3%95/">负载均衡算法</a>
-        </h1>
-      
-      <div class='ListMeta'>
-  <time datetime="2021-02-01T09:47:15.000Z" itemprop="datePublished">
-    2021-02-01
-  </time>
-  
-  
-  / 
-  <ul>
-    
-  <li class="meta-text">
-  { <a href="/blog/categories/Algorithm/">Algorithm</a> }
-  </li>
-
-
-  </ul>
   
 </div>
-
-    </header>
-    <div>
-      
-        <h3 id="负载均衡算法"><a href="#负载均衡算法" class="headerlink" title="负载均衡算法"></a>负载均衡算法</h3><h4 id="简介"><a href="#简介" class="headerlink" title="简介"></a>简介</h4><p>负载均衡的职责是将网络请求或者其他形式的负载均摊到不同的机器上，避免集群中部分服务器压力过大而另一些服务器空闲的情况。通过负载均衡，可以让每台服务器获取到适合自己处理能力的负载，为高负载服务器分流的同时，也可以避免资源浪费。以下将分析几种不同的负载均衡算法。</p>
-        
-          <div class="more-link">
-            <a href="/blog/2021/02/01/%E8%B4%9F%E8%BD%BD%E5%9D%87%E8%A1%A1%E7%AE%97%E6%B3%95/#more">Read On »</a>
-          </div>
-        
-      
-    </div>
-</article>
-
-    </li>
-  
-    <li>
-      <article class='ListView'>
-    <header class="title">
-      
-        <h1>
-          <a href="/blog/2021/01/30/QuickSort/">快速排序算法</a>
-        </h1>
-      
-      <div class='ListMeta'>
-  <time datetime="2021-01-30T12:39:46.000Z" itemprop="datePublished">
-    2021-01-30
-  </time>
-  
-  
-  / 
-  <ul>
-    
-  <li class="meta-text">
-  { <a href="/blog/categories/Algorithm/">Algorithm</a> }
-  </li>
-
-
-  </ul>
-  
-</div>
-
-    </header>
-    <div>
-      
-        <h3 id="介绍"><a href="#介绍" class="headerlink" title="介绍"></a>介绍</h3><p>快速排序算法是一种基于分治思想的排序算法，分治思想有以下特点：</p>
-<ol>
-<li>将一个问题可划分为同一类型的若干个子问题，子问题的规模相同或者相近</li>
-<li>求解这些子问题，然后合并这些子问题的解，可得到原问题的答案</li>
-</ol>
-        
-          <div class="more-link">
-            <a href="/blog/2021/01/30/QuickSort/#more">Read On »</a>
-          </div>
-        
-      
-    </div>
-</article>
-
-    </li>
-  
-    <li>
-      <article class='ListView'>
-    <header class="title">
-      
-        <h1>
-          <a href="/blog/2021/01/29/%E8%82%A1%E7%A5%A8%E4%B9%B0%E5%8D%96%E7%9A%84%E6%9C%80%E4%BD%B3%E6%97%B6%E9%97%B4III/">股票的最佳买卖时间III</a>
-        </h1>
-      
-      <div class='ListMeta'>
-  <time datetime="2021-01-29T08:56:19.000Z" itemprop="datePublished">
-    2021-01-29
-  </time>
-  
-  | 
-  <ul>
-    
-  <li class="meta-text">
-  { <a href="/blog/tags/Algorithm/">Algorithm</a> }
-  </li>
-
-
-  </ul>
-  
-  
-  / 
-  <ul>
-    
-  <li class="meta-text">
-  { <a href="/blog/categories/Algorithm/">Algorithm</a> }
-  </li>
-
-  <li class="meta-text">
-  { <a href="/blog/categories/Algorithm/Leetcode/">Leetcode</a> }
-  </li>
-
-
-  </ul>
-  
-</div>
-
-    </header>
-    <div>
-      
-        <p><a target="_blank" rel="noopener" href="https://leetcode.com/problems/best-time-to-buy-and-sell-stock-iii/discuss/135704/Detail-explanation-of-DP-solution">原文链接</a></p>
-<h3 id="题目描述："><a href="#题目描述：" class="headerlink" title="题目描述："></a>题目描述：</h3><p>给定一个数组， 它的第i个元素是一支给定的股票在第i天的价格。设计一个算法来计算你所能获取的最大利润，最多可完成两笔交易，且不能同时参与多笔交易，即再次购买之前必须出售掉之前的股票。</p>
-        
-          <div class="more-link">
-            <a href="/blog/2021/01/29/%E8%82%A1%E7%A5%A8%E4%B9%B0%E5%8D%96%E7%9A%84%E6%9C%80%E4%BD%B3%E6%97%B6%E9%97%B4III/#more">Read On »</a>
-          </div>
-        
-      
-    </div>
-</article>
-
-    </li>
-  
-</ul>
-
 
             <footer>
     <div>© 2021 - Levi </div>
