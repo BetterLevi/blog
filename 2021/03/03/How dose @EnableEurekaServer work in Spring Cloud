@@ -102,22 +102,22 @@
 </li>
 </ul>
 <p><strong>2.3 Core Bean</strong></p>
-<p>​        ① EurekaServerConfig：init eurekaServer configuration；</p>
+<p>​         ① EurekaServerConfig：init eurekaServer configuration；</p>
 <p>　　② EurekaController：init interfaces of dashboard and interfaces about information of eurekaServer；</p>
 <p>　　③ PeerAwareInstanceRegistry：init registry of cluster；</p>
 <p>　　④ PeerEurekaNodes：init cluster nodes；</p>
 <p>　　⑤ EurekaServerContext：init instance and config context；</p>
 <p>　　⑥ EurekaServerBootstrap：init start class of Eureka Server；</p>
 <p>　　⑦ FilterRegistrationBean：register Jsrsey to Filter；</p>
-<h4 id="3-Jersey-server-in-Eureka"><a href="#3-Jersey-server-in-Eureka" class="headerlink" title="3. Jersey server in Eureka"></a>3. Jersey server in Eureka</h4><p><strong>3.1 Server Registry</strong></p>
+<h4 id="3-Jersey-server-in-Eureka"><a href="#3-Jersey-server-in-Eureka" class="headerlink" title="3. Jersey server in Eureka"></a>3. Jersey server in Eureka</h4><p>3.1 Server Registry</p>
 <p><em>ApplicationResource.addInstance()</em> method to invoke <em>PeerAwareInstanceRegistryImpl.register(final InstanceInfo info, final boolean isReplication)</em></p>
-<p><strong>3.2 Get All Instances Information</strong></p>
+<p>3.2 Get All Instances Information</p>
 <p><em>ApplicationsResource.getContainers()</em> get information from cache.</p>
-<p><strong>3.3 Get additional Instances Information</strong></p>
+<p>3.3 Get additional Instances Information</p>
 <p><em>ApplicationsResource.getContainerDifferential()</em>, logic is the same as get all instances information.</p>
-<p><strong>3.4 HeartBeat</strong></p>
+<p>3.4 HeartBeat</p>
 <p>InstanceResource.renewLease(), the core logic is invoking <em>PeerAwareInstanceRegistryImpl.renew(final String appName, final String id, final boolean isReplication)</em> method to renew, and update it’s lastUpdateTimestamp.</p>
-<p><strong>3.5 Server Offline</strong></p>
+<p>3.5 Server Offline</p>
 <p>InstanceResource.cancelLease(), the core logic is invoking <em>PeerAwareInstanceRegistryImpl.cancel(final String appName, final String id,final boolean isReplication)</em> to offline service and update status of instance to DELETE and update cache essentially.</p>
 <p><a target="_blank" rel="noopener" href="https://www.cnblogs.com/toby-xu/p/13770595.html">Reference</a></p>
 
