@@ -1,0 +1,165 @@
+<!DOCTYPE html>
+<html lang="zh-cmn-Hans">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <meta http-equiv="X-UA-Compatible" content="ie=edge">
+  <title>Spring Cloud中@EnableEurekaServer如何启动Eureka Server | Why So Serious?</title>
+  
+    <link rel="icon" href="/blog/assets/smile.JPG">
+  
+  
+  
+  <!--link rel="stylesheet" href="//cdn.jsdelivr.net/highlight.js/9.10.0/styles/github-gist.min.css"-->
+  
+<link rel="stylesheet" href="//cdn.jsdelivr.net/highlight.js/9.10.0/styles/github-gist.min.css">
+
+  
+<link rel="stylesheet" href="/blog/css/style.css">
+
+<meta name="generator" content="Hexo 5.3.0"></head>
+
+<body>
+<div class="Shell">
+    <aside class='SideBar'>
+    <section class='avatar' style="background-image: url(/blog/assets/header.png)">
+        <div class='av-pic' style="background-image: url(/blog/assets/avatar.jpg)">
+        </div>
+    </section>
+    <section class='menu'>
+        <div>Why So Serious?</div>
+        
+        <ul>
+          
+            <a href="/blog/" class="Btn">
+              <li>Home</li>
+            </a>  
+          
+            <a href="/blog/categories/" class="Btn">
+              <li>Categories</li>
+            </a>  
+          
+            <a href="/blog/about/" class="Btn">
+              <li>About</li>
+            </a>  
+          
+        </ul>
+    </section>
+    <section class="media">
+        
+    </section>
+</aside>
+
+    <div class="container">
+        <div data-pager-shell>
+            <div>
+  <article class='ContentView'>
+    <header class='PageTitle'>
+        <h1>Spring Cloud中@EnableEurekaServer如何启动Eureka Server</h1>
+    </header>
+
+    <section>
+      <h3 id="How-dose-EnableEurekaServer-work-in-Spring-Cloud"><a href="#How-dose-EnableEurekaServer-work-in-Spring-Cloud" class="headerlink" title="How dose @EnableEurekaServer work in Spring Cloud?"></a>How dose @EnableEurekaServer work in Spring Cloud?</h3><p>We often use an annotation called @EnableEurekaServer to start the Eureka Server in Spring Cloud, but how dose it work? I will explain the process by reading the source code in this blog.</p>
+<a id="more"></a>
+
+<h4 id="1-Auto-initialization-and-configuration"><a href="#1-Auto-initialization-and-configuration" class="headerlink" title="1. Auto initialization and configuration"></a>1. Auto initialization and configuration</h4><p><strong>@EnableEurekaServer</strong></p>
+<figure class="highlight java"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br></pre></td><td class="code"><pre><code class="hljs java"><span class="hljs-comment">/**</span><br><span class="hljs-comment"> * Annotation to activate Eureka Server related configuration.</span><br><span class="hljs-comment"> * &#123;<span class="hljs-doctag">@link</span> EurekaServerAutoConfiguration&#125;</span><br><span class="hljs-comment"> * </span><br><span class="hljs-comment"> * <span class="hljs-doctag">@author</span> Dave Syer</span><br><span class="hljs-comment"> * <span class="hljs-doctag">@author</span> Biju Kunjummen</span><br><span class="hljs-comment"> *</span><br><span class="hljs-comment"> */</span><br><br><span class="hljs-meta">@Target(ElementType.TYPE)</span><br><span class="hljs-meta">@Retention(RetentionPolicy.RUNTIME)</span><br><span class="hljs-meta">@Documented</span><br><span class="hljs-meta">@Import(EurekaServerMarkerConfiguration.class)</span><br><span class="hljs-keyword">public</span> <span class="hljs-meta">@interface</span> EnableEurekaServer &#123;<br><br>&#125;<br></code></pre></td></tr></table></figure>
+<p>This annotation does nothing but import a class named <em>EurekaServerMarkerConfiguration</em>, so let’s look at the implementation of this class.</p>
+<p><strong>EurekaServerMarkerConfiguration</strong></p>
+<figure class="highlight java"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br><span class="line">18</span><br><span class="line">19</span><br></pre></td><td class="code"><pre><code class="hljs java"><span class="hljs-comment">/**</span><br><span class="hljs-comment"> * Responsible for adding in a marker bean to activate</span><br><span class="hljs-comment"> * &#123;<span class="hljs-doctag">@link</span> EurekaServerAutoConfiguration&#125;.</span><br><span class="hljs-comment"> *</span><br><span class="hljs-comment"> * <span class="hljs-doctag">@author</span> Biju Kunjummen</span><br><span class="hljs-comment"> */</span><br><span class="hljs-meta">@Configuration</span><br><span class="hljs-keyword">public</span> <span class="hljs-class"><span class="hljs-keyword">class</span> <span class="hljs-title">EurekaServerMarkerConfiguration</span> </span>&#123;<br><br>	<span class="hljs-meta">@Bean</span><br>	<span class="hljs-function"><span class="hljs-keyword">public</span> Marker <span class="hljs-title">eurekaServerMarkerBean</span><span class="hljs-params">()</span> </span>&#123;<br>		<span class="hljs-keyword">return</span> <span class="hljs-keyword">new</span> Marker();<br>	&#125;<br><br>	<span class="hljs-class"><span class="hljs-keyword">class</span> <span class="hljs-title">Marker</span> </span>&#123;<br><br>	&#125;<br><br>&#125;<br></code></pre></td></tr></table></figure>
+<p>As we can see, this class init a Bean named Marker and Marker is just an empty class, so it‘s used to make some mark. In other words, there are some operations will be executed once Marker exists.</p>
+<h4 id="2-Eureka-Server"><a href="#2-Eureka-Server" class="headerlink" title="2. Eureka Server"></a>2. Eureka Server</h4><p>By reading source code and comments, we can find that there is class named EurekaServerAutoConfiguration depends on the Marker to config the Eureka Server.</p>
+<p><strong>2.1 EurekaServerAutoConfiguration</strong></p>
+<figure class="highlight java"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br></pre></td><td class="code"><pre><code class="hljs java"><span class="hljs-meta">@Configuration</span><br><span class="hljs-meta">@Import(EurekaServerInitializerConfiguration.class)</span><br><span class="hljs-meta">@ConditionalOnBean(EurekaServerMarkerConfiguration.Marker.class)</span><br><span class="hljs-meta">@EnableConfigurationProperties(&#123; EurekaDashboardProperties.class,</span><br><span class="hljs-meta">		InstanceRegistryProperties.class &#125;)</span><br><span class="hljs-meta">@PropertySource(&quot;classpath:/eureka/server.properties&quot;)</span><br><span class="hljs-keyword">public</span> <span class="hljs-class"><span class="hljs-keyword">class</span> <span class="hljs-title">EurekaServerAutoConfiguration</span> <span class="hljs-keyword">extends</span> <span class="hljs-title">WebMvcConfigurerAdapter</span> </span>&#123;<br>  ...<br>&#125;<br></code></pre></td></tr></table></figure>
+<p>This is a configuration class, and there are several annotations:</p>
+<ol>
+<li><em>@Import</em> imports a <em>EurekaServerInitializerConfiguration.class</em>, and this class is responsible for the initialization of Eureka Server.</li>
+<li><em>@ConditionalOnBean</em> means only if Bean of <em>EurekaServerMarkerConfiguration.Marker.class</em> exists, the current class will be injected to Spring container as a new Bean.</li>
+<li><em>@EnableConfigurationProperties</em> makes <em>EurekaDashboardProperties.class</em> and <em>InstanceRegistryProperties.class</em> effective.<br><em>EurekaDashboardProperties.class</em> mainly config for UI like path to the Eureka Dashboard and <em>InstanceRegistryProperties.class</em> mainly config for instance register like prefix for Eureka instance.</li>
+<li><em>@PropertySource</em> is used to specify the path of config file</li>
+</ol>
+<p>From the code we can know the Eureka Server is inited by <em>EurekaServerInitializerConfiguration.class,</em> so let’s look the source code this class.</p>
+<p><strong>2.2 EurekaServerInitializerConfiguration源码</strong></p>
+<figure class="highlight java"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br><span class="line">18</span><br><span class="line">19</span><br><span class="line">20</span><br><span class="line">21</span><br><span class="line">22</span><br><span class="line">23</span><br><span class="line">24</span><br><span class="line">25</span><br><span class="line">26</span><br><span class="line">27</span><br><span class="line">28</span><br></pre></td><td class="code"><pre><code class="hljs java"><span class="hljs-meta">@Configuration</span><br><span class="hljs-keyword">public</span> <span class="hljs-class"><span class="hljs-keyword">class</span> <span class="hljs-title">EurekaServerInitializerConfiguration</span></span><br><span class="hljs-class">		<span class="hljs-keyword">implements</span> <span class="hljs-title">ServletContextAware</span>, <span class="hljs-title">SmartLifecycle</span>, <span class="hljs-title">Ordered</span> </span>&#123;<br>  ...<br>    <span class="hljs-meta">@Override</span><br>	<span class="hljs-function"><span class="hljs-keyword">public</span> <span class="hljs-keyword">void</span> <span class="hljs-title">start</span><span class="hljs-params">()</span> </span>&#123;<br>		<span class="hljs-keyword">new</span> Thread(<span class="hljs-keyword">new</span> Runnable() &#123;<br>			<span class="hljs-meta">@Override</span><br>			<span class="hljs-function"><span class="hljs-keyword">public</span> <span class="hljs-keyword">void</span> <span class="hljs-title">run</span><span class="hljs-params">()</span> </span>&#123;<br>				<span class="hljs-keyword">try</span> &#123;<br>          <span class="hljs-comment">//EurekaServerBootstrap is inited in EurekaServerAutoConfiguration</span><br>					eurekaServerBootstrap.contextInitialized(<br>							EurekaServerInitializerConfiguration.<span class="hljs-keyword">this</span>.servletContext);<br>					log.info(<span class="hljs-string">&quot;Started Eureka Server&quot;</span>);<br>          <span class="hljs-comment">//publish EurekaRegistryAvailableEvent</span><br>					publish(<span class="hljs-keyword">new</span> EurekaRegistryAvailableEvent(getEurekaServerConfig()));<br>					EurekaServerInitializerConfiguration.<span class="hljs-keyword">this</span>.running = <span class="hljs-keyword">true</span>;<br>          <span class="hljs-comment">//publish EurekaRegistryAvailableEvent</span><br>					publish(<span class="hljs-keyword">new</span> EurekaServerStartedEvent(getEurekaServerConfig()));<br>				&#125;<br>				<span class="hljs-keyword">catch</span> (Exception ex) &#123;<br>					<span class="hljs-comment">// Help!</span><br>					log.error(<span class="hljs-string">&quot;Could not initialize Eureka servlet context&quot;</span>, ex);<br>				&#125;<br>			&#125;<br>		&#125;).start();<br>	&#125;<br>&#125;<br></code></pre></td></tr></table></figure>
+<p>This also is a configuration class which implements <em>SmartLifecycle</em> interface, so this class will execute <em>start()</em> method if <em>isAutoStartup()</em> returns true after all beans are inited.</p>
+<ul>
+<li><p>Enter into <strong>EurekaServerBootstrap.contextInitialized(ServletContext context)</strong></p>
+<figure class="highlight java"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br></pre></td><td class="code"><pre><code class="hljs java"><span class="hljs-function"><span class="hljs-keyword">public</span> <span class="hljs-keyword">void</span> <span class="hljs-title">contextInitialized</span><span class="hljs-params">(ServletContext context)</span> </span>&#123;<br>		<span class="hljs-keyword">try</span> &#123;<br>			initEurekaEnvironment();<br>			initEurekaServerContext();<br><br>			context.setAttribute(EurekaServerContext.class.getName(), <span class="hljs-keyword">this</span>.serverContext);<br>		&#125;<br>		<span class="hljs-keyword">catch</span> (Throwable e) &#123;<br>			log.error(<span class="hljs-string">&quot;Cannot bootstrap eureka server :&quot;</span>, e);<br>			<span class="hljs-keyword">throw</span> <span class="hljs-keyword">new</span> RuntimeException(<span class="hljs-string">&quot;Cannot bootstrap eureka server :&quot;</span>, e);<br>		&#125;<br>	&#125;<br></code></pre></td></tr></table></figure></li>
+<li><p>Enter into <strong>initEurekaServerContext()</strong></p>
+<figure class="highlight java"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br></pre></td><td class="code"><pre><code class="hljs java"><span class="hljs-function"><span class="hljs-keyword">protected</span> <span class="hljs-keyword">void</span> <span class="hljs-title">initEurekaServerContext</span><span class="hljs-params">()</span> <span class="hljs-keyword">throws</span> Exception </span>&#123;<br>        <span class="hljs-comment">//omit</span><br>        <span class="hljs-comment">//Copy registry from neighboring eureka node</span><br>        <span class="hljs-keyword">int</span> registryCount = <span class="hljs-keyword">this</span>.registry.syncUp();<br>        <span class="hljs-comment">/**</span><br><span class="hljs-comment">         * 1. Modify status to UP</span><br><span class="hljs-comment">         * 2. Use postInit in parent class to start a schedule method which is used for deleting server that does not renew in default(90s) period</span><br><span class="hljs-comment">         */</span><br>        <span class="hljs-keyword">this</span>.registry.openForTraffic(<span class="hljs-keyword">this</span>.applicationInfoManager, registryCount);<br>        <span class="hljs-comment">// Register all monitoring statistics.</span><br>        EurekaMonitors.registerAllStats();<br>    &#125;<br></code></pre></td></tr></table></figure>
+<ol>
+<li> <em>this.registry.syncUp()</em> by using the <em>PeerAwareInstanceRegistryImpl.syncUp()</em> method</li>
+</ol>
+<figure class="highlight java"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br><span class="line">18</span><br><span class="line">19</span><br><span class="line">20</span><br><span class="line">21</span><br><span class="line">22</span><br><span class="line">23</span><br><span class="line">24</span><br><span class="line">25</span><br><span class="line">26</span><br><span class="line">27</span><br><span class="line">28</span><br><span class="line">29</span><br></pre></td><td class="code"><pre><code class="hljs java"><span class="hljs-function"><span class="hljs-keyword">public</span> <span class="hljs-keyword">int</span> <span class="hljs-title">syncUp</span><span class="hljs-params">()</span> </span>&#123;<br>        <span class="hljs-comment">// Copy entire entry from neighboring DS node</span><br>        <span class="hljs-keyword">int</span> count = <span class="hljs-number">0</span>;<br> <br>        <span class="hljs-keyword">for</span> (<span class="hljs-keyword">int</span> i = <span class="hljs-number">0</span>; ((i &lt; serverConfig.getRegistrySyncRetries()) &amp;&amp; (count == <span class="hljs-number">0</span>)); i++) &#123;<br>            <span class="hljs-keyword">if</span> (i &gt; <span class="hljs-number">0</span>) &#123;<br>                <span class="hljs-keyword">try</span> &#123;<br>                    Thread.sleep(serverConfig.getRegistrySyncRetryWaitMs());<br>                &#125; <span class="hljs-keyword">catch</span> (InterruptedException e) &#123;<br>                    logger.warn(<span class="hljs-string">&quot;Interrupted during registry transfer..&quot;</span>);<br>                    <span class="hljs-keyword">break</span>;<br>                &#125;<br>            &#125;<br>            Applications apps = eurekaClient.getApplications();<br>            <span class="hljs-keyword">for</span> (Application app : apps.getRegisteredApplications()) &#123;<br>                <span class="hljs-keyword">for</span> (InstanceInfo instance : app.getInstances()) &#123;<br>                    <span class="hljs-keyword">try</span> &#123;<br>                        <span class="hljs-keyword">if</span> (isRegisterable(instance)) &#123;<br>                            register(instance, instance.getLeaseInfo().getDurationInSecs(), <span class="hljs-keyword">true</span>);<br>                            count++;<br>                        &#125;<br>                    &#125; <span class="hljs-keyword">catch</span> (Throwable t) &#123;<br>                        logger.error(<span class="hljs-string">&quot;During DS init copy&quot;</span>, t);<br>                    &#125;<br>                &#125;<br>            &#125;<br>        &#125;<br>        <span class="hljs-keyword">return</span> count;<br>    &#125;<br></code></pre></td></tr></table></figure>
+<p>Get all server instances by http invocation, and then traverse all instances to register if the instance can be registered. The nature of register is add instance to the local property of AbstractInstanceRegistry:</p>
+<figure class="highlight java"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br></pre></td><td class="code"><pre><code class="hljs java"><span class="hljs-keyword">private</span> <span class="hljs-keyword">final</span> ConcurrentHashMap&lt;String, Map&lt;String, Lease&lt;InstanceInfo&gt;&gt;&gt; registry<br>            = <span class="hljs-keyword">new</span> ConcurrentHashMap&lt;String, Map&lt;String, Lease&lt;InstanceInfo&gt;&gt;&gt;();<br></code></pre></td></tr></table></figure>
+<ol start="2">
+<li>Two steps in <em>PeerAwareInstanceRegistryImpl.openForTraffic()</em> method, first is setting status to UP and second is starting a schedule task to delete instance which does not renew in a default period.</li>
+</ol>
+<p>Enter into <em>AbstractInstanceRegistry.postInit()</em> method:</p>
+<figure class="highlight java"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br></pre></td><td class="code"><pre><code class="hljs java"><span class="hljs-function"><span class="hljs-keyword">protected</span> <span class="hljs-keyword">void</span> <span class="hljs-title">postInit</span><span class="hljs-params">()</span> </span>&#123;<br>        renewsLastMin.start();<br>        <span class="hljs-keyword">if</span> (evictionTaskRef.get() != <span class="hljs-keyword">null</span>) &#123;<br>            evictionTaskRef.get().cancel();<br>        &#125;<br>        evictionTaskRef.set(<span class="hljs-keyword">new</span> EvictionTask());<br>        evictionTimer.schedule(evictionTaskRef.get(),<br>                serverConfig.getEvictionIntervalTimerInMs(),<br>                serverConfig.getEvictionIntervalTimerInMs());<br>    &#125;<br></code></pre></td></tr></table></figure>
+<p><em>new EvictionTask()</em> create a EvictionTask instance and invoke it’s run() method, this method will traverse all registered instances and find those who are expired and add them to expiredLeases, then update the status of instances in expiredLease to DELETED.</p>
+</li>
+</ul>
+<p><strong>2.3 Core Bean</strong></p>
+<p>​        ① EurekaServerConfig：init eurekaServer configuration；</p>
+<p>　　② EurekaController：init interfaces of dashboard and interfaces about information of eurekaServer；</p>
+<p>　　③ PeerAwareInstanceRegistry：init registry of cluster；</p>
+<p>　　④ PeerEurekaNodes：init cluster nodes；</p>
+<p>　　⑤ EurekaServerContext：init instance and config context；</p>
+<p>　　⑥ EurekaServerBootstrap：init start class of Eureka Server；</p>
+<p>　　⑦ FilterRegistrationBean：register Jsrsey to Filter；</p>
+<h4 id="3-Jersey-server-in-Eureka"><a href="#3-Jersey-server-in-Eureka" class="headerlink" title="3. Jersey server in Eureka"></a>3. Jersey server in Eureka</h4><p><strong>3.1 Server Registry</strong></p>
+<p><em>ApplicationResource.addInstance()</em> method to invoke <em>PeerAwareInstanceRegistryImpl.register(final InstanceInfo info, final boolean isReplication)</em></p>
+<p><strong>3.2 Get All Instances Information</strong></p>
+<p><em>ApplicationsResource.getContainers()</em> get information from cache.</p>
+<p><strong>3.3 Get additional Instances Information</strong></p>
+<p><em>ApplicationsResource.getContainerDifferential()</em>, logic is the same as get all instances information.</p>
+<p><strong>3.4 HeartBeat</strong></p>
+<p>InstanceResource.renewLease(), the core logic is invoking <em>PeerAwareInstanceRegistryImpl.renew(final String appName, final String id, final boolean isReplication)</em> method to renew, and update it’s lastUpdateTimestamp.</p>
+<p><strong>3.5 Server Offline</strong></p>
+<p>InstanceResource.cancelLease(), the core logic is invoking <em>PeerAwareInstanceRegistryImpl.cancel(final String appName, final String id,final boolean isReplication)</em> to offline service and update status of instance to DELETE and update cache essentially.</p>
+<p><a target="_blank" rel="noopener" href="https://www.cnblogs.com/toby-xu/p/13770595.html">Reference</a></p>
+
+
+      
+
+    </section>
+    
+      <section class='ArticleMeta'>
+          <div>
+            发布于&nbsp;
+            <time datetime="2021-03-03T10:01:51.000Z" itemprop="datePublished">
+              2021-03-03
+            </time>
+          </div>
+          
+      </section>
+    
+    
+</article>
+
+  
+</div>
+
+            <footer>
+    <div>© 2021 - Levi </div>
+    <div>
+        <span>
+            Powered by <a target="_blank" rel="noopener" href="https://hexo.io">Hexo</a>
+        </span>
+    </div>
+</footer>
+
+        </div>
+    </div>
+</div>
+
+<script src="/blog/js/pager/dist/singlepager.js"></script>
+
+<script>
+var sp = new Pager('data-pager-shell')
+
+</script>
+</body>
+</html>
