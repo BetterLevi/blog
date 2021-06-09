@@ -72,14 +72,15 @@
 
 
 <h3 id="算法实现"><a href="#算法实现" class="headerlink" title="算法实现"></a>算法实现</h3><figure class="highlight java"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br><span class="line">18</span><br><span class="line">19</span><br><span class="line">20</span><br><span class="line">21</span><br><span class="line">22</span><br><span class="line">23</span><br><span class="line">24</span><br><span class="line">25</span><br><span class="line">26</span><br><span class="line">27</span><br></pre></td><td class="code"><pre><code class="hljs java"><span class="hljs-function"><span class="hljs-keyword">public</span> <span class="hljs-keyword">void</span> <span class="hljs-title">sort</span><span class="hljs-params">(<span class="hljs-keyword">int</span>[] nums)</span> </span>&#123;<br>  quickSort(nums, <span class="hljs-number">0</span>, nums.length - <span class="hljs-number">1</span>);<br>&#125;<br><br><span class="hljs-function"><span class="hljs-keyword">private</span> <span class="hljs-keyword">void</span> <span class="hljs-title">quickSort</span><span class="hljs-params">(<span class="hljs-keyword">int</span>[] nums, <span class="hljs-keyword">int</span> low. <span class="hljs-keyword">int</span> high)</span> </span>&#123;<br>	<span class="hljs-keyword">if</span> (low &lt; high) &#123;<br>  	<span class="hljs-keyword">int</span> segment = partition(nums, low, high);<br>    quickSort(nums, low, segment - <span class="hljs-number">1</span>);<br>    quickSort(nums, segment + <span class="hljs-number">1</span>, high);<br>  &#125;<br>&#125;<br><br><span class="hljs-function"><span class="hljs-keyword">private</span> <span class="hljs-keyword">int</span> <span class="hljs-title">partition</span><span class="hljs-params">(<span class="hljs-keyword">int</span> nums, <span class="hljs-keyword">int</span> low, <span class="hljs-keyword">int</span> high)</span> </span>&#123;<br>  <span class="hljs-keyword">int</span> pivot = nums[low];<br>  <span class="hljs-keyword">while</span>(low &lt; high) &#123;<br>    <span class="hljs-keyword">while</span>(low &lt; high &amp;&amp; pivot &lt;= nums[high]) &#123;<br>      high--;<br>    &#125;<br>    nums[low] = nums[high];<br>    <span class="hljs-keyword">while</span>(low &lt; high &amp;&amp; pivot &gt;= nums[low]) &#123;<br>      low++;<br>    &#125;<br>    nums[high] = nums[low];<br>  &#125;<br>  nums[low] = pivot;<br>  <span class="hljs-keyword">return</span> low;<br>&#125;<br></code></pre></td></tr></table></figure>
-
-
 <h3 id="时间复杂度"><a href="#时间复杂度" class="headerlink" title="时间复杂度"></a>时间复杂度</h3><ul>
-<li><p>最优情况：分割点全都位于数组的中间位置，此时比较次数为:<br>$$<br>C_{best}(n) = 2C_{best}(n / 2) + n, C_{best}(1) = 0<br>$$</p>
+<li><p>最优情况：分割点全都位于数组的中间位置，此时比较次数为:</p>
+<p>C<sub>best</sub>(n) = 2C<sub>best</sub>(n/2) + n, C<sub>best</sub>(1) = 0</p>
 </li>
-<li><p>最坏情况：所有的分割点都在数组的端点位置，此时的比较次数为：<br>$$<br>C_{worst}(n) = (n + 1) + n + (n - 1) + … + 3, O(n^2)<br>$$</p>
+<li><p>最坏情况：所有的分割点都在数组的端点位置，此时的比较次数为：</p>
+<p>C<sub>worst</sub>(n) = (n + 1) + n + (n - 1) + … + 3, O(n<sup>2</sup>)</p>
 </li>
-<li><p>平均情况：<br>$$<br>C_{avg}(n) = 2n\ln(n) \approx 1.39n\log(2n)<br>$$</p>
+<li><p>平均情况：</p>
+<p>C<sub>avg</sub>(n) = 2nln(n) &#8776; 1.39nlog(2n)</p>
 </li>
 </ul>
 <p>根据时间复杂度可以看出，该算法在平均情况下仅比最优情况下多执行39%的操作，其内循环的效率较高使得该算法在处理随机排列的数组时会比合并排序快。</p>
