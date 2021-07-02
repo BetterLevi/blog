@@ -1,0 +1,215 @@
+<!DOCTYPE html>
+<html lang="zh-cmn-Hans">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <meta http-equiv="X-UA-Compatible" content="ie=edge">
+  <title>高性能Mysql | Why So Serious?</title>
+  
+    <link rel="icon" href="/blog/assets/smile.JPG">
+  
+  
+  
+  <!--link rel="stylesheet" href="//cdn.jsdelivr.net/highlight.js/9.10.0/styles/github-gist.min.css"-->
+  
+<link rel="stylesheet" href="//cdn.jsdelivr.net/highlight.js/9.10.0/styles/github-gist.min.css">
+
+  
+<link rel="stylesheet" href="/blog/css/style.css">
+
+<meta name="generator" content="Hexo 5.3.0"></head>
+
+<body>
+<div class="Shell">
+    <aside class='SideBar'>
+    <section class='avatar' style="background-image: url(/blog/assets/header.png)">
+        <div class='av-pic' style="background-image: url(/blog/assets/avatar.jpg)">
+        </div>
+    </section>
+    <section class='menu'>
+        <div>Why So Serious?</div>
+        
+        <ul>
+          
+            <a href="/blog/" class="Btn">
+              <li>Home</li>
+            </a>  
+          
+            <a href="/blog/categories/" class="Btn">
+              <li>Categories</li>
+            </a>  
+          
+            <a href="/blog/about/" class="Btn">
+              <li>About</li>
+            </a>  
+          
+        </ul>
+    </section>
+    <section class="media">
+        
+    </section>
+</aside>
+
+    <div class="container">
+        <div data-pager-shell>
+            <div>
+  <article class='ContentView'>
+    <header class='PageTitle'>
+        <h1>高性能Mysql</h1>
+    </header>
+
+    <section>
+      <p>设计应用数据库与数据表需要考虑的常见维度。</p>
+<a id="more"></a>
+
+<ul>
+<li><p>表设计</p>
+<ol>
+<li><p>自增主键：顺序插入减少数据分片，数字的排序性能更好，聚簇索引减少回表查询</p>
+</li>
+<li><p>  外键：特定应用保持数据一致性</p>
+</li>
+<li><p> 为列选择合适的数据类型，减少内存占用</p>
+</li>
+<li><p> 避免一个表中出现太多的列：行结构转换的代价依赖于列的数量</p>
+</li>
+<li><p> 范式与反范式表的设计：范式查询时经常需要关联，反范式所有数据都在同一张表中因此查询不需要关联。实际中不会有完全遵循范式或者反范式的设计</p>
+</li>
+<li><p>询不需要关联。实际中不会有完全遵循范式或者反范式的设计</p>
+</li>
+</ol>
+</li>
+<li><p>索引设计</p>
+<ol>
+<li><p> 索引是在引擎层而非服务器层实现的</p>
+</li>
+<li><p>索引有：B-Tree，哈希索引，空间数据索引（R-Tree，地理位置），全文索引</p>
+</li>
+<li><p>索引优势：减少服务器需要扫描的数据量；帮助服务器避免排序和创建临时表；磁盘顺序I/O</p>
+</li>
+<li><p>查询条件中，列为表达式的一部分时，该列无法使用索引</p>
+</li>
+<li><p>索引列的顺序：将选择性高的列放在索引的最前列</p>
+</li>
+<li><p>覆盖索引：直接从索引中读取数据无需回表查询，性能高</p>
+</li>
+<li><p>索引最左匹配原则</p>
+</li>
+<li><p>全文索引：自然语言匹配，布尔匹配</p>
+</li>
+</ol>
+</li>
+<li><p>查询优化</p>
+<ol>
+<li><p>避免不必要的排序，如group by时可以指定order by null避免排序</p>
+</li>
+<li><p> limit 10，10会先查出100条符合条件的数据，然后丢弃前面的90条返回最后10条。数据量过大时，用下一页而不是跳转的方式会时查询性能更好（id &gt; ${id} limit 10）</p>
+</li>
+<li><p>善于使用explain分析需要执行的语句，从分析结果优化查询</p>
+</li>
+<li><p>对于大查询采用分治的思想，将大查询切分为小查询，每个查询功能完全一样，多次执行（如删除旧数据）</p>
+</li>
+<li><p>分解关联查询：让缓存的效率更高；执行单个查询会降低对锁的竞争；小查询本身的效率很可能更高；在应用层做关联对数据库依赖降低，更容易做到高性能和可扩展；可以减少冗余记录的查询</p>
+</li>
+</ol>
+</li>
+<li><p>查询优化器做了什么</p>
+<ol>
+<li><p>重新定义关联表的顺序</p>
+</li>
+<li><p>将外连接转化为内连接</p>
+</li>
+<li><p>使用等价变换规则</p>
+</li>
+<li><p>优化count(), min(), max()</p>
+</li>
+<li><p>预估并转换为常数表达式</p>
+</li>
+<li><p>覆盖索引扫描</p>
+</li>
+<li><p>子查询优化</p>
+</li>
+<li><p>提前终止查询：满足需求时立刻终止查询</p>
+</li>
+<li><p>等值传播</p>
+</li>
+<li><p>列表IN()的比较：将in列表中的数据先进行排序，然后通过二分法确定列表中的值是否满足条件</p>
+</li>
+<li><p>… …</p>
+</li>
+</ol>
+</li>
+<li><p>使用缓存</p>
+<ol>
+<li><p> mysql服务缓存，只有完全相同的两条查询语句，后者才能命中前者的缓存。非查询语句不会缓存，即非查询语句永远不可能命中缓存</p>
+</li>
+<li><p>可以指定查询语句是否被缓存，或指定是否需要查询缓存</p>
+</li>
+<li><p>应用层缓存：本地缓存，redis缓存等</p>
+</li>
+</ol>
+</li>
+<li><p>数据同步</p>
+<ol>
+<li><p>主服务的二进制日志（BinLog）被读取到从服务的中继日志中，然后有一个线程从中继日志中同步数据</p>
+</li>
+<li><p>基于行的复制：保存数据的二进制，直接复制；基于语句的复制：保存生成数据的命令，重新执行一遍命令</p>
+</li>
+</ol>
+</li>
+<li><p>分库分表</p>
+<ol>
+<li>真正需要时才考虑这种操作，否则只会增加不必要的性能损耗和维护难度</li>
+</ol>
+</li>
+</ul>
+
+
+      
+
+    </section>
+    
+      <section class='ArticleMeta'>
+          <div>
+            发布于&nbsp;
+            <time datetime="2021-07-02T12:01:36.000Z" itemprop="datePublished">
+              2021-07-02
+            </time>
+          </div>
+          
+      </section>
+    
+    
+</article>
+
+  
+</div>
+
+            <footer>
+    <div>© 2021 - Levi </div>
+    <div>
+        <span>
+<!--            Powered by <a target="_blank" rel="noopener" href="https://hexo.io">Hexo</a>-->
+            Homo sum, humani nihil a me alienum puto
+        </span>
+    </div>
+<!--    {% if theme.footer.counter %}-->
+    <script async src="//busuanzi.ibruce.info/busuanzi/2.3/busuanzi.pure.mini.js"></script>
+    <span id="busuanzi_container_site_pv">Views <span id="busuanzi_value_site_pv"></span> </span>
+    <span class="post-meta-divider">|</span>
+    <span id="busuanzi_container_site_uv">Visitors <span id="busuanzi_value_site_uv"></span> </span>
+<!--    {% endif %}-->
+</footer>
+
+        </div>
+    </div>
+</div>
+
+<script src="/blog/js/pager/dist/singlepager.js"></script>
+
+<script>
+var sp = new Pager('data-pager-shell')
+
+</script>
+</body>
+</html>
