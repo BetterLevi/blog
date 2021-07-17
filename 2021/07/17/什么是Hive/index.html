@@ -1,0 +1,179 @@
+<!DOCTYPE html>
+<html lang="zh-cmn-Hans">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <meta http-equiv="X-UA-Compatible" content="ie=edge">
+  <title>什么是Hive | Why So Serious?</title>
+  
+    <link rel="icon" href="/blog/assets/smile.JPG">
+  
+  
+  
+  <!--link rel="stylesheet" href="//cdn.jsdelivr.net/highlight.js/9.10.0/styles/github-gist.min.css"-->
+  
+<link rel="stylesheet" href="//cdn.jsdelivr.net/highlight.js/9.10.0/styles/github-gist.min.css">
+
+  
+<link rel="stylesheet" href="/blog/css/style.css">
+
+<meta name="generator" content="Hexo 5.3.0"></head>
+
+<body>
+<div class="Shell">
+    <aside class='SideBar'>
+    <section class='avatar' style="background-image: url(/blog/assets/header.png)">
+        <div class='av-pic' style="background-image: url(/blog/assets/avatar.jpg)">
+        </div>
+    </section>
+    <section class='menu'>
+        <div>Why So Serious?</div>
+        
+        <ul>
+          
+            <a href="/blog/" class="Btn">
+              <li>Home</li>
+            </a>  
+          
+            <a href="/blog/categories/" class="Btn">
+              <li>Categories</li>
+            </a>  
+          
+            <a href="/blog/about/" class="Btn">
+              <li>About</li>
+            </a>  
+          
+        </ul>
+    </section>
+    <section class="media">
+        
+    </section>
+</aside>
+
+    <div class="container">
+        <div data-pager-shell>
+            <div>
+  <article class='ContentView'>
+    <header class='PageTitle'>
+        <h1>什么是Hive</h1>
+    </header>
+
+    <section>
+      <p>Hive到底是什么？它的存在是为了解决什么问题？Hive有什么优缺点？它与传统数据库之间有什么关系？Hive在大数据分析中扮演着什么角色？Let’s explore Hive together.</p>
+<a id="more"></a>
+
+<h2 id="Hive是什么"><a href="#Hive是什么" class="headerlink" title="Hive是什么"></a>Hive是什么</h2><p>简单来说，Hive是一种将SQL语句转换为MapReduce/Tez/Spark程序的工具。有了Hive我们不需要学习如何写MapReduce/Tez/Spark程序来进行数据分析，只需使用我们已经熟悉的SQL语言进行我们需要的数据查询，Hive会将SQL解析并转化为相应的计算程序在HDFS上运行并返回结果。</p>
+<p><strong>官方定义</strong></p>
+<blockquote>
+<p>The Apache Hive data warehouse software facilitates reading, writing, and managing large datasets residing in distributed storage using SQL. Built on top of Apache Hadoop, it provides:</p>
+<ul>
+<li>Tools to enable easy access to data via SQL, thus enabling data warehousing tasks such as extract/transform/load(ETL), reporting, and data analysis</li>
+<li>A mechanism to impose structure on a variety of data formats</li>
+<li>Access to files stored either directly in Apache HDFS or in other data storage systems such as Apache HBase</li>
+<li>Query execution using Apache Hadoop MapReduce, Apache Tez or Apache Spark frameworks.</li>
+</ul>
+<hr>
+<p>数据仓库工具Hive致力于使用SQL来简化在分布式存储中的数据读写以及数据集管理问题。基于Apache Hadoop实现，Hive提供了：</p>
+<ul>
+<li>通过SQL简化数据访问的工具，即简化数据仓库任务如数据提取、转化、加载、报告和数据分析等。</li>
+<li>将各种各样的数据格式转换为特定结构的机制</li>
+<li>可以直接访问HDFS或者其他数据存储系统如HBase中的文件</li>
+<li>可以指定数据计算框架如MapReduce、Tez或者Spark来执行查询</li>
+</ul>
+</blockquote>
+<p><strong>为什么是基于Hadoop</strong></p>
+<p>根据上述定义可以看到:</p>
+<ol>
+<li>Hive处理的数据实际上是存放在HDFS或其他存储系统中，它本身不会存储数据</li>
+<li>底层数据计算框架使用MapReduce、Tez或Spark</li>
+<li>Hive调度资源使用Yarn框架</li>
+</ol>
+<p>所以Hive实际上是一个Hadoop的工具，为了帮助大家更加方便的使用Hadoop来工作，如果没有Hadoop，或许Hive存在的意义也就没有了吧。</p>
+<h2 id="Hive的优缺点"><a href="#Hive的优缺点" class="headerlink" title="Hive的优缺点"></a>Hive的优缺点</h2><p><strong>优点</strong></p>
+<ol>
+<li>使用简单，用户只需会使用SQL即可</li>
+<li>使数据分析工作变得简单，处理大数据优势明显</li>
+<li>支持用户自定义函数</li>
+</ol>
+<p><strong>缺点</strong></p>
+<ol>
+<li>表达能力有限，无法表达迭代式算法（如第一个MapReduce程序的输出作为第二个MapReduce程序的输入）</li>
+<li>Hive转换SQL生成的MapReduce程序通常不够有效率</li>
+<li>Hive调优困难，粒度较粗</li>
+</ol>
+<h2 id="Hive架构组成"><a href="#Hive架构组成" class="headerlink" title="Hive架构组成"></a>Hive架构组成</h2><ul>
+<li>两种客户端<ol>
+<li>CLI（command-line interface）命令行客户端</li>
+<li>JDBC客户端</li>
+</ol>
+</li>
+<li>四种驱动<ol>
+<li>SQL Parser：sql解析器，检查sql语法</li>
+<li>Physical Plan：编译器，将sql语句转换为MapReduce或者指定的计算框架程序</li>
+<li>Query Optimizer：优化器，优化查询</li>
+<li>Execution：执行器，执行计算程序</li>
+</ol>
+</li>
+<li>元数据库Metastore<ol>
+<li>Metastore是一个数据库，用于存储需要处理的数据的元数据，比如表名，表所属的数据库，表的用户信息，表字段，表数据所在的目录等等，将这些元数据存储在一个关系型数据库中，这个数据库就是Hive的Metastore</li>
+<li>Hive自带的Metastore是一个Derby数据库，但因为Derby不支持并发，一遍将Derby替换为Mysql</li>
+</ol>
+</li>
+</ul>
+<p>所以Hive处理过程中会读取两部分数据：存放在HDFS中的结构化数据（要处理的大数据）以及存放在Mysql中的元数据（目标数据信息）。通过读取元数据信息，找到对应的字段；然后把字段映射到结构化数据中，通过映射形成一张虚表，用于Hive数据查询与分析。</p>
+<h2 id="Hive的特点"><a href="#Hive的特点" class="headerlink" title="Hive的特点"></a>Hive的特点</h2><ul>
+<li>Hive是针对数据仓库设计的，主要用于读，所有的数据在加载时已经确定好，适合处理静态数据</li>
+<li>Hive本身计算的延迟较高</li>
+<li>Hive基于Hadoop，也具备可扩展性，支持并发运行</li>
+<li>Hive是一种数仓工具，不是数据库</li>
+</ul>
+
+
+      
+
+    </section>
+    
+      <section class='ArticleMeta'>
+          <div>
+            发布于&nbsp;
+            <time datetime="2021-07-17T10:24:18.000Z" itemprop="datePublished">
+              2021-07-17
+            </time>
+          </div>
+          
+      </section>
+    
+    
+</article>
+
+  
+</div>
+
+            <footer>
+    <div>© 2021 - Levi </div>
+    <div>
+        <span>
+<!--            Powered by <a target="_blank" rel="noopener" href="https://hexo.io">Hexo</a>-->
+            Homo sum, humani nihil a me alienum puto
+        </span>
+    </div>
+<!--    {% if theme.footer.counter %}-->
+    <script async src="//busuanzi.ibruce.info/busuanzi/2.3/busuanzi.pure.mini.js"></script>
+    <span id="busuanzi_container_site_pv">Views <span id="busuanzi_value_site_pv"></span> </span>
+    <span class="post-meta-divider">|</span>
+    <span id="busuanzi_container_site_uv">Visitors <span id="busuanzi_value_site_uv"></span> </span>
+<!--    {% endif %}-->
+</footer>
+
+        </div>
+    </div>
+</div>
+
+<script src="/blog/js/pager/dist/singlepager.js"></script>
+
+<script>
+var sp = new Pager('data-pager-shell')
+
+</script>
+</body>
+</html>
