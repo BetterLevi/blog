@@ -1,0 +1,141 @@
+<!DOCTYPE html>
+<html lang="zh-cmn-Hans">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <meta http-equiv="X-UA-Compatible" content="ie=edge">
+  <title>查询与分析 | Why So Serious?</title>
+  
+    <link rel="icon" href="/blog/assets/smile.JPG">
+  
+  
+  
+  <!--link rel="stylesheet" href="//cdn.jsdelivr.net/highlight.js/9.10.0/styles/github-gist.min.css"-->
+  
+<link rel="stylesheet" href="//cdn.jsdelivr.net/highlight.js/9.10.0/styles/github-gist.min.css">
+
+  
+<link rel="stylesheet" href="/blog/css/style.css">
+
+<meta name="generator" content="Hexo 5.3.0"></head>
+
+<body>
+<div class="Shell">
+    <aside class='SideBar'>
+    <section class='avatar' style="background-image: url(/blog/assets/header.png)">
+        <div class='av-pic' style="background-image: url(/blog/assets/avatar.jpg)">
+        </div>
+    </section>
+    <section class='menu'>
+        <div>Why So Serious?</div>
+        
+        <ul>
+          
+            <a href="/blog/" class="Btn">
+              <li>Home</li>
+            </a>  
+          
+            <a href="/blog/categories/" class="Btn">
+              <li>Categories</li>
+            </a>  
+          
+            <a href="/blog/about/" class="Btn">
+              <li>About</li>
+            </a>  
+          
+        </ul>
+    </section>
+    <section class="media">
+        
+    </section>
+</aside>
+
+    <div class="container">
+        <div data-pager-shell>
+            <div>
+  <article class='ContentView'>
+    <header class='PageTitle'>
+        <h1>查询与分析</h1>
+    </header>
+
+    <section>
+      <p>虽然你可以使用ES存储文档、提取文档和元数据，但其真正的强大之处在于能够轻松访问构建在Apache Lucene搜索引擎库上的全套搜索功能。</p>
+<p>ES提供了一套简单的，有逻辑的Restful Api来管理你的集群和索引。以及搜索你的数据。如果需要测试，你只需要通过命令行或者通过Kibana上的开发者平台发送请求。对于应用，可以直接使用<a target="_blank" rel="noopener" href="https://www.elastic.co/guide/en/elasticsearch/client/index.html">Elasticsearc Client</a>。</p>
+<a id="more"></a>
+
+<h3 id="搜索你的数据"><a href="#搜索你的数据" class="headerlink" title="搜索你的数据"></a>搜索你的数据</h3><p>ES的Rest Api支持结构化查询，全文查询，或者是两个查询联合的复杂查询。结构化查询与你用SQL构造出来的查询类型，比如，你可以在<em>employee</em>索引中搜索<em>gender</em>和<em>age</em> 字段并且根据<em>hire_date</em>进行排序。全文检索就是找到那些跟查询字符串匹配的文档并且根据相关性（文档与搜索条目的匹配程度）进行排序。</p>
+<p>除了搜索单个术语外，你还可以执行短语搜索，相似性搜索和前缀搜索，并获得自动完成建议。</p>
+<p>如果想搜索地理数据或者其他数字类型的数据怎么办？ES将这些非文本数据存放在优化后的数据结构中以满足高性能的地理数据和数字类型的查询。</p>
+<p>通过ES详尽的JSON格式的查询，你可以体验所有的搜索功能。你也可以通过构造SQL样式的查询在ES内部搜索并聚合本地数据，而JDBC和ODBC驱动程序使得一大批第三方程序可以通过SQL来和ES进行交互。</p>
+<h3 id="分析你的数据"><a href="#分析你的数据" class="headerlink" title="分析你的数据"></a>分析你的数据</h3><p>ES聚合功能使你可以构建复杂的数据摘要并深入了解关键指标、模式和趋势。不同于<strong>大海捞针</strong>，聚合功能可以回答一些类型下面的问题：</p>
+<ul>
+<li>海里面有多少针？</li>
+<li>针的平均长度是多少？</li>
+<li>针的长度中位数是多少？按制造商划分后呢？</li>
+<li>在过去的六个月中，海里面增加了多少根针？</li>
+</ul>
+<p>你也可以利用聚合来回答一些不易察觉的问题，例如：</p>
+<ul>
+<li>哪家针的制造商最受欢迎？</li>
+<li>是否有一批针是不正常的？</li>
+</ul>
+<p>因为聚合利用了用于搜索的相同的数据结构，所以它们也非常快，这使得你可以实时的分析和可视化你的数据。你的<em>report</em> 和<em>dashboard</em>会根据数据的变化而进行更新，所以你可以根据最新的信息来采取行动。</p>
+<p>更重要的是，聚合是与搜索请求一起运行的。在同一份数据上，在单个请求上，你可以同时搜索文档，过滤结果并进行分析。由于聚合是在特定搜素的上下问中计算的，一次你不仅会显示所有70号针的计数，还显示了用户搜索条件匹配的70号针的计数——例如所有70号针的不绣针。</p>
+<h3 id="更多性能"><a href="#更多性能" class="headerlink" title="更多性能"></a>更多性能</h3><p>想使你的流数据分析自动化？你可以使用机器学习特性在你的数据中创建正常行为的精确基线，并识别异常模式，通过机器学习，你可以检测：</p>
+<ul>
+<li>与值、计数或者频率的时间偏差有关的异常</li>
+<li>统计稀有度</li>
+<li>种群成员的异常行为</li>
+</ul>
+<p>最好的部分是在不指定算法、模型或者其他数据科学相关配置的情况下完成此工作。</p>
+<p><a target="_blank" rel="noopener" href="https://www.elastic.co/guide/en/elasticsearch/reference/current/search-analyze.html">原文</a></p>
+
+
+      
+
+    </section>
+    
+      <section class='ArticleMeta'>
+          <div>
+            发布于&nbsp;
+            <time datetime="2021-07-19T10:35:15.000Z" itemprop="datePublished">
+              2021-07-19
+            </time>
+          </div>
+          
+      </section>
+    
+    
+</article>
+
+  
+</div>
+
+            <footer>
+    <div>© 2021 - Levi </div>
+    <div>
+        <span>
+<!--            Powered by <a target="_blank" rel="noopener" href="https://hexo.io">Hexo</a>-->
+            Homo sum, humani nihil a me alienum puto
+        </span>
+    </div>
+<!--    {% if theme.footer.counter %}-->
+    <script async src="//busuanzi.ibruce.info/busuanzi/2.3/busuanzi.pure.mini.js"></script>
+    <span id="busuanzi_container_site_pv">Views <span id="busuanzi_value_site_pv"></span> </span>
+    <span class="post-meta-divider">|</span>
+    <span id="busuanzi_container_site_uv">Visitors <span id="busuanzi_value_site_uv"></span> </span>
+<!--    {% endif %}-->
+</footer>
+
+        </div>
+    </div>
+</div>
+
+<script src="/blog/js/pager/dist/singlepager.js"></script>
+
+<script>
+var sp = new Pager('data-pager-shell')
+
+</script>
+</body>
+</html>
