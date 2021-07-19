@@ -1,0 +1,128 @@
+<!DOCTYPE html>
+<html lang="zh-cmn-Hans">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <meta http-equiv="X-UA-Compatible" content="ie=edge">
+  <title>文档和索引中的数据 | Why So Serious?</title>
+  
+    <link rel="icon" href="/blog/assets/smile.JPG">
+  
+  
+  
+  <!--link rel="stylesheet" href="//cdn.jsdelivr.net/highlight.js/9.10.0/styles/github-gist.min.css"-->
+  
+<link rel="stylesheet" href="//cdn.jsdelivr.net/highlight.js/9.10.0/styles/github-gist.min.css">
+
+  
+<link rel="stylesheet" href="/blog/css/style.css">
+
+<meta name="generator" content="Hexo 5.3.0"></head>
+
+<body>
+<div class="Shell">
+    <aside class='SideBar'>
+    <section class='avatar' style="background-image: url(/blog/assets/header.png)">
+        <div class='av-pic' style="background-image: url(/blog/assets/avatar.jpg)">
+        </div>
+    </section>
+    <section class='menu'>
+        <div>Why So Serious?</div>
+        
+        <ul>
+          
+            <a href="/blog/" class="Btn">
+              <li>Home</li>
+            </a>  
+          
+            <a href="/blog/categories/" class="Btn">
+              <li>Categories</li>
+            </a>  
+          
+            <a href="/blog/about/" class="Btn">
+              <li>About</li>
+            </a>  
+          
+        </ul>
+    </section>
+    <section class="media">
+        
+    </section>
+</aside>
+
+    <div class="container">
+        <div data-pager-shell>
+            <div>
+  <article class='ContentView'>
+    <header class='PageTitle'>
+        <h1>文档和索引中的数据</h1>
+    </header>
+
+    <section>
+      <p>Elasticsearch（ES）是一种分布式文档存储。不同于关系型数据库存一行有关系的数据，ES存储被序列化成JSON的复杂数据结构。当你在集群中有多个ES节点时，文档也是被分布式存储的并且可以在任意一个节点立即查找到数据。</p>
+<p>当一个文档被存储后，它会被索引并且可以被近实时（1秒内）查询到。ES使用到一种名叫倒排索引的数据结构，这种结构支持非常快速的全文查询。简单来说，倒排索引就是列出在所有文档中出现的单个单词，并且标记每个单词在所有文档中的出现情况。</p>
+<a id="more"></a>
+
+<p>一个索引可以被看作是被优化的文档集合，每个文档时一个字段集合，这个字段就是包含你的数据的key-value键值对。默认情况下，ES会将所有数据按照字段进行索引，每个被索引的字段都有专用的，被优化的数据结构。举例来说，text类型的字段存储在倒排索引中，而数字类型和地理类型的字段被存储在BKD Tree中。这种每种字段用合适的数据结构来组合并返回搜索结果的能力时ES快速检索文档的原因之一。</p>
+<p>ES也支持schema-less，这个的意思是文档可以被索引而不需要明确地指定如何处理文档中可能出现的字段。当启用动态mapping时，ES会自动检测并且为索引增加新的字段，这种默认的处理方式使得索引和检索文档变得容易 —— 只需要开始索引文档，ES会检测并用合适的数据类型来匹配文档中的booleans、float和integer值、date或string值。</p>
+<p>但是，你自己对数据的了解程度肯定要比ES多，所以你可以自定义规则来控制动态mapping或者明确定义mapping以便完全控制每个字段如何存储并索引。</p>
+<p>自定义mapping有如下优势：</p>
+<ul>
+<li>区分全文字符串（需要分词）和精确字符串（keyword）</li>
+<li>执行特定语言的文本分析</li>
+<li>为局部的搜索匹配优化字段类型</li>
+<li>使用用户自定义日期格式 </li>
+<li>使用一些相近的无法自动区分的数据结构，比如geo_point和geo_shape</li>
+</ul>
+<p>我们经常会用不同的方式索引同一个字段以便满足不同的需求。例如，你可能想把一个字符串索引为text类型用于全文检索，又想把该字段索引为keyword用于排序或者聚合。或者，你可能想用多种语言分析器来处理用户输入的字符串。</p>
+<p>在索引时用到的分析链在搜索过程中也会用到。当你查询一个全文索引字段时，在查询条目被找到之前查询文本会经历相同的分析。（也就是说，索引文档与查询文档的分析过程是一样的）</p>
+
+
+      
+
+    </section>
+    
+      <section class='ArticleMeta'>
+          <div>
+            发布于&nbsp;
+            <time datetime="2021-07-19T10:14:53.000Z" itemprop="datePublished">
+              2021-07-19
+            </time>
+          </div>
+          
+      </section>
+    
+    
+</article>
+
+  
+</div>
+
+            <footer>
+    <div>© 2021 - Levi </div>
+    <div>
+        <span>
+<!--            Powered by <a target="_blank" rel="noopener" href="https://hexo.io">Hexo</a>-->
+            Homo sum, humani nihil a me alienum puto
+        </span>
+    </div>
+<!--    {% if theme.footer.counter %}-->
+    <script async src="//busuanzi.ibruce.info/busuanzi/2.3/busuanzi.pure.mini.js"></script>
+    <span id="busuanzi_container_site_pv">Views <span id="busuanzi_value_site_pv"></span> </span>
+    <span class="post-meta-divider">|</span>
+    <span id="busuanzi_container_site_uv">Visitors <span id="busuanzi_value_site_uv"></span> </span>
+<!--    {% endif %}-->
+</footer>
+
+        </div>
+    </div>
+</div>
+
+<script src="/blog/js/pager/dist/singlepager.js"></script>
+
+<script>
+var sp = new Pager('data-pager-shell')
+
+</script>
+</body>
+</html>
