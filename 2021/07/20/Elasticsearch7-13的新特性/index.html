@@ -4,7 +4,7 @@
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
   <meta http-equiv="X-UA-Compatible" content="ie=edge">
-  <title>Why So Serious?</title>
+  <title>Elasticsearch7.13的新特性 | Why So Serious?</title>
   
     <link rel="icon" href="/blog/assets/smile.JPG">
   
@@ -52,43 +52,14 @@
 
     <div class="container">
         <div data-pager-shell>
-            <ul class="Index">
-  
+            <div>
+  <article class='ContentView'>
     <header class='PageTitle'>
-        <h1>{ Elasticsearch }</h1>
+        <h1>Elasticsearch7.13的新特性</h1>
     </header>
-  
-  
-    <li>
-      <article class='ListView'>
-    <header class="title">
-      
-        <h1>
-          <a href="/blog/2021/07/20/Elasticsearch7-13%E7%9A%84%E6%96%B0%E7%89%B9%E6%80%A7/">Elasticsearch7.13的新特性</a>
-        </h1>
-      
-      <div class='ListMeta'>
-  <time datetime="2021-07-20T08:13:42.000Z" itemprop="datePublished">
-    2021-07-20
-  </time>
-  
-  
-  / 
-  <ul>
-    
-  <li class="meta-text">
-  { <a href="/blog/categories/Elasticsearch/">Elasticsearch</a> }
-  </li>
 
-
-  </ul>
-  
-</div>
-
-    </header>
-    <div>
-      
-        <h3 id="Frozen-tier现在是可用的"><a href="#Frozen-tier现在是可用的" class="headerlink" title="Frozen tier现在是可用的"></a>Frozen tier现在是可用的</h3><p>Frozen tier和部分挂载的索引（之前称为共享缓存可搜索快照）现在通常是可用的。</p>
+    <section>
+      <h3 id="Frozen-tier现在是可用的"><a href="#Frozen-tier现在是可用的" class="headerlink" title="Frozen tier现在是可用的"></a>Frozen tier现在是可用的</h3><p>Frozen tier和部分挂载的索引（之前称为共享缓存可搜索快照）现在通常是可用的。</p>
 <p><em>Pending：什么是Frozen tier？</em></p>
 <h3 id="索引运行时字段"><a href="#索引运行时字段" class="headerlink" title="索引运行时字段"></a>索引运行时字段</h3><p>运行时字段可以使你在查询阶段根据其他字段和文档属性动态的创建字段。这些查询阶段的运行时字段在速度方面进行了灵活性优化，并且可以随时更改。ES7.13你也可以创建索引阶段的运行时字段，以便更好的提升查询性能。<a target="_blank" rel="noopener" href="https://www.elastic.co/guide/en/elasticsearch/reference/7.13/runtime-indexed.html">索引运行时字段</a></p>
 <h3 id="在CIDR范围内无痛匹配IPv4和IPv6地址"><a href="#在CIDR范围内无痛匹配IPv4和IPv6地址" class="headerlink" title="在CIDR范围内无痛匹配IPv4和IPv6地址"></a>在CIDR范围内无痛匹配IPv4和IPv6地址</h3><p>无痛表达式可以在CIDR范围内匹配IPv4和IPv6地址。这对于在安全中区分和分组IP地址或者监控用例时非常有用。这个特性在所有上下文中都可用，包活运行时字段，提取，搜索和聚合。举例来说：</p>
@@ -109,180 +80,26 @@
 <h3 id="数据帧分析和推断可编辑"><a href="#数据帧分析和推断可编辑" class="headerlink" title="数据帧分析和推断可编辑"></a>数据帧分析和推断可编辑</h3><p>训练离群点检测、回归和分类模型，然后使用这些模型对输入数据进行推断的能力在7.13中变得普遍可用。</p>
 <h3 id="训练模型别名"><a href="#训练模型别名" class="headerlink" title="训练模型别名"></a>训练模型别名</h3><p>为了简化训练模型的部署和升级，7.13中引入了模型别名的概念。当在摄取管道中使用模型别名时，现在可以对基础引用模型进行更改，而不必更新管道。当新模型加载到缓存中时，所有摄取管道的基础引用模型将自动更改。</p>
 
+
       
-    </div>
+
+    </section>
+    
+      <section class='ArticleMeta'>
+          <div>
+            发布于&nbsp;
+            <time datetime="2021-07-20T08:13:42.000Z" itemprop="datePublished">
+              2021-07-20
+            </time>
+          </div>
+          
+      </section>
+    
+    
 </article>
 
-    </li>
-  
-    <li>
-      <article class='ListView'>
-    <header class="title">
-      
-        <h1>
-          <a href="/blog/2021/07/20/%E9%9B%86%E7%BE%A4%E8%8A%82%E7%82%B9%E4%B8%8E%E5%88%86%E7%89%87%E7%9A%84%E6%89%A9%E5%B1%95%E6%80%A7%E5%92%8C%E5%BC%B9%E6%80%A7/">集群节点与分片的扩展性和弹性</a>
-        </h1>
-      
-      <div class='ListMeta'>
-  <time datetime="2021-07-20T06:43:24.000Z" itemprop="datePublished">
-    2021-07-20
-  </time>
-  
-  
-  / 
-  <ul>
-    
-  <li class="meta-text">
-  { <a href="/blog/categories/Elasticsearch/">Elasticsearch</a> }
-  </li>
-
-
-  </ul>
   
 </div>
-
-    </header>
-    <div>
-      
-        <p>Elasticsearch是高可用并可以根据用户需求进行拓展的，原因是它的分布式特性。你可以向集群添加节点来提升集群能力然后ES会将你的数据和查询分布到所有可用节点上。你无需更改自己的应用，ES知道如何平衡多节点集群以提供高可用和可扩展性。节点越多，集群越强。</p>
-        
-          <div class="more-link">
-            <a href="/blog/2021/07/20/%E9%9B%86%E7%BE%A4%E8%8A%82%E7%82%B9%E4%B8%8E%E5%88%86%E7%89%87%E7%9A%84%E6%89%A9%E5%B1%95%E6%80%A7%E5%92%8C%E5%BC%B9%E6%80%A7/#more">Read On »</a>
-          </div>
-        
-      
-    </div>
-</article>
-
-    </li>
-  
-    <li>
-      <article class='ListView'>
-    <header class="title">
-      
-        <h1>
-          <a href="/blog/2021/07/19/%E6%9F%A5%E8%AF%A2%E4%B8%8E%E5%88%86%E6%9E%90/">查询与分析</a>
-        </h1>
-      
-      <div class='ListMeta'>
-  <time datetime="2021-07-19T10:35:15.000Z" itemprop="datePublished">
-    2021-07-19
-  </time>
-  
-  
-  / 
-  <ul>
-    
-  <li class="meta-text">
-  { <a href="/blog/categories/Elasticsearch/">Elasticsearch</a> }
-  </li>
-
-
-  </ul>
-  
-</div>
-
-    </header>
-    <div>
-      
-        <p>虽然你可以使用ES存储文档、提取文档和元数据，但其真正的强大之处在于能够轻松访问构建在Apache Lucene搜索引擎库上的全套搜索功能。</p>
-<p>ES提供了一套简单的，有逻辑的Restful Api来管理你的集群和索引。以及搜索你的数据。如果需要测试，你只需要通过命令行或者通过Kibana上的开发者平台发送请求。对于应用，可以直接使用<a target="_blank" rel="noopener" href="https://www.elastic.co/guide/en/elasticsearch/client/index.html">Elasticsearc Client</a>。</p>
-        
-          <div class="more-link">
-            <a href="/blog/2021/07/19/%E6%9F%A5%E8%AF%A2%E4%B8%8E%E5%88%86%E6%9E%90/#more">Read On »</a>
-          </div>
-        
-      
-    </div>
-</article>
-
-    </li>
-  
-    <li>
-      <article class='ListView'>
-    <header class="title">
-      
-        <h1>
-          <a href="/blog/2021/07/19/%E6%96%87%E6%A1%A3%E5%92%8C%E7%B4%A2%E5%BC%95%E4%B8%AD%E7%9A%84%E6%95%B0%E6%8D%AE/">文档和索引中的数据</a>
-        </h1>
-      
-      <div class='ListMeta'>
-  <time datetime="2021-07-19T10:14:53.000Z" itemprop="datePublished">
-    2021-07-19
-  </time>
-  
-  
-  / 
-  <ul>
-    
-  <li class="meta-text">
-  { <a href="/blog/categories/Elasticsearch/">Elasticsearch</a> }
-  </li>
-
-
-  </ul>
-  
-</div>
-
-    </header>
-    <div>
-      
-        <p>Elasticsearch（ES）是一种分布式文档存储。不同于关系型数据库存一行有关系的数据，ES存储被序列化成JSON的复杂数据结构。当你在集群中有多个ES节点时，文档也是被分布式存储的并且可以在任意一个节点立即查找到数据。</p>
-<p>当一个文档被存储后，它会被索引并且可以被近实时（1秒内）查询到。ES使用到一种名叫倒排索引的数据结构，这种结构支持非常快速的全文查询。简单来说，倒排索引就是列出在所有文档中出现的单个单词，并且标记每个单词在所有文档中的出现情况。</p>
-        
-          <div class="more-link">
-            <a href="/blog/2021/07/19/%E6%96%87%E6%A1%A3%E5%92%8C%E7%B4%A2%E5%BC%95%E4%B8%AD%E7%9A%84%E6%95%B0%E6%8D%AE/#more">Read On »</a>
-          </div>
-        
-      
-    </div>
-</article>
-
-    </li>
-  
-    <li>
-      <article class='ListView'>
-    <header class="title">
-      
-        <h1>
-          <a href="/blog/2021/07/19/%E4%BB%80%E4%B9%88%E6%98%AFElasticsearch/">什么是Elasticsearch</a>
-        </h1>
-      
-      <div class='ListMeta'>
-  <time datetime="2021-07-19T10:13:21.000Z" itemprop="datePublished">
-    2021-07-19
-  </time>
-  
-  
-  / 
-  <ul>
-    
-  <li class="meta-text">
-  { <a href="/blog/categories/Elasticsearch/">Elasticsearch</a> }
-  </li>
-
-
-  </ul>
-  
-</div>
-
-    </header>
-    <div>
-      
-        <p>Elasticsearch是Elastic栈的中心，是一个分布式搜索与分析引擎。Logstash和Beat使向Elasticsearch中收集、聚合、丰富数据并且存储变得容易。Kibana可以让人们交互式的探索、可视化、分享数据的探索角度并且可以管理和监控Elastic栈。Elasticsearch则用于处理数据索引、搜索、分析。</p>
-        
-          <div class="more-link">
-            <a href="/blog/2021/07/19/%E4%BB%80%E4%B9%88%E6%98%AFElasticsearch/#more">Read On »</a>
-          </div>
-        
-      
-    </div>
-</article>
-
-    </li>
-  
-</ul>
-
 
             <footer>
     <div>© 2021 - Levi </div>

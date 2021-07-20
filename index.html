@@ -60,6 +60,103 @@
     <header class="title">
       
         <h1>
+          <a href="/blog/2021/07/20/Elasticsearch7-13%E7%9A%84%E6%96%B0%E7%89%B9%E6%80%A7/">Elasticsearch7.13的新特性</a>
+        </h1>
+      
+      <div class='ListMeta'>
+  <time datetime="2021-07-20T08:13:42.000Z" itemprop="datePublished">
+    2021-07-20
+  </time>
+  
+  
+  / 
+  <ul>
+    
+  <li class="meta-text">
+  { <a href="/blog/categories/Elasticsearch/">Elasticsearch</a> }
+  </li>
+
+
+  </ul>
+  
+</div>
+
+    </header>
+    <div>
+      
+        <h3 id="Frozen-tier现在是可用的"><a href="#Frozen-tier现在是可用的" class="headerlink" title="Frozen tier现在是可用的"></a>Frozen tier现在是可用的</h3><p>Frozen tier和部分挂载的索引（之前称为共享缓存可搜索快照）现在通常是可用的。</p>
+<p><em>Pending：什么是Frozen tier？</em></p>
+<h3 id="索引运行时字段"><a href="#索引运行时字段" class="headerlink" title="索引运行时字段"></a>索引运行时字段</h3><p>运行时字段可以使你在查询阶段根据其他字段和文档属性动态的创建字段。这些查询阶段的运行时字段在速度方面进行了灵活性优化，并且可以随时更改。ES7.13你也可以创建索引阶段的运行时字段，以便更好的提升查询性能。<a target="_blank" rel="noopener" href="https://www.elastic.co/guide/en/elasticsearch/reference/7.13/runtime-indexed.html">索引运行时字段</a></p>
+<h3 id="在CIDR范围内无痛匹配IPv4和IPv6地址"><a href="#在CIDR范围内无痛匹配IPv4和IPv6地址" class="headerlink" title="在CIDR范围内无痛匹配IPv4和IPv6地址"></a>在CIDR范围内无痛匹配IPv4和IPv6地址</h3><p>无痛表达式可以在CIDR范围内匹配IPv4和IPv6地址。这对于在安全中区分和分组IP地址或者监控用例时非常有用。这个特性在所有上下文中都可用，包活运行时字段，提取，搜索和聚合。举例来说：</p>
+<figure class="highlight java"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br></pre></td><td class="code"><pre><code class="hljs java">CIDR myCidrRange = <span class="hljs-keyword">new</span> CIDR(<span class="hljs-string">&#x27;10.1.1.0/25&#x27;</span>);<br>myCidrRange.contains(<span class="hljs-string">&#x27;10.1.1.127&#x27;</span>); <span class="hljs-comment">// true</span><br>myCidrRange.contains(<span class="hljs-string">&#x27;10.1.1.129&#x27;</span>); <span class="hljs-comment">// false</span><br><br>myCidrRange = <span class="hljs-keyword">new</span> CIDR(<span class="hljs-string">&#x27;2001:0db8:85a3::/64&#x27;</span>);<br>myCidrRange.contains(<span class="hljs-string">&#x27;2001:0db8:85a3:0000:0000:8a2e:0370:7334&#x27;</span>); <span class="hljs-comment">// true</span><br>myCidrRange.contains(<span class="hljs-string">&#x27;2001:0db8:85a3:0001:0000:8a2e:0370:7334&#x27;</span>); <span class="hljs-comment">// false</span><br></code></pre></td></tr></table></figure>
+
+
+<h3 id="新的查询类型combined-fields"><a href="#新的查询类型combined-fields" class="headerlink" title="新的查询类型combined_fields"></a>新的查询类型combined_fields</h3><p>7.13介绍了一种<strong>combined_fields</strong>查询，是一种搜索多个<em>text</em>字段作为联合字段的查询语句。你可以使用<em>combined_fields</em>查询作为多匹配查询跨字段类型选项的简单化替代。<a target="_blank" rel="noopener" href="https://www.elastic.co/guide/en/elasticsearch/reference/7.13/query-dsl-combined-fields-query.html">combined_fields查询文档</a></p>
+<h3 id="更快的terms聚合"><a href="#更快的terms聚合" class="headerlink" title="更快的terms聚合"></a>更快的<em>terms</em>聚合</h3><p>当满足以下条件时，会显著的提升<em>terms</em>聚合的速度：</p>
+<ul>
+<li>没有父或子的聚合</li>
+<li>目标索引不包括已经删除的索引的文档或者最近合并的文档</li>
+<li>不使用文档级别的安全性</li>
+<li>没有顶级查询</li>
+<li>某些字段有全局序数，例如<em>keyword</em>或者<em>IP</em>字段</li>
+<li>独立的terms个数少于一千个</li>
+</ul>
+<p>许多时间序列的用例可能满足这些标准，特别是对于冷数据或者frozen tier中的数据。</p>
+<h3 id="数据帧分析和推断可编辑"><a href="#数据帧分析和推断可编辑" class="headerlink" title="数据帧分析和推断可编辑"></a>数据帧分析和推断可编辑</h3><p>训练离群点检测、回归和分类模型，然后使用这些模型对输入数据进行推断的能力在7.13中变得普遍可用。</p>
+<h3 id="训练模型别名"><a href="#训练模型别名" class="headerlink" title="训练模型别名"></a>训练模型别名</h3><p>为了简化训练模型的部署和升级，7.13中引入了模型别名的概念。当在摄取管道中使用模型别名时，现在可以对基础引用模型进行更改，而不必更新管道。当新模型加载到缓存中时，所有摄取管道的基础引用模型将自动更改。</p>
+
+      
+    </div>
+</article>
+
+    </li>
+  
+    <li>
+      <article class='ListView'>
+    <header class="title">
+      
+        <h1>
+          <a href="/blog/2021/07/20/%E9%9B%86%E7%BE%A4%E8%8A%82%E7%82%B9%E4%B8%8E%E5%88%86%E7%89%87%E7%9A%84%E6%89%A9%E5%B1%95%E6%80%A7%E5%92%8C%E5%BC%B9%E6%80%A7/">集群节点与分片的扩展性和弹性</a>
+        </h1>
+      
+      <div class='ListMeta'>
+  <time datetime="2021-07-20T06:43:24.000Z" itemprop="datePublished">
+    2021-07-20
+  </time>
+  
+  
+  / 
+  <ul>
+    
+  <li class="meta-text">
+  { <a href="/blog/categories/Elasticsearch/">Elasticsearch</a> }
+  </li>
+
+
+  </ul>
+  
+</div>
+
+    </header>
+    <div>
+      
+        <p>Elasticsearch是高可用并可以根据用户需求进行拓展的，原因是它的分布式特性。你可以向集群添加节点来提升集群能力然后ES会将你的数据和查询分布到所有可用节点上。你无需更改自己的应用，ES知道如何平衡多节点集群以提供高可用和可扩展性。节点越多，集群越强。</p>
+        
+          <div class="more-link">
+            <a href="/blog/2021/07/20/%E9%9B%86%E7%BE%A4%E8%8A%82%E7%82%B9%E4%B8%8E%E5%88%86%E7%89%87%E7%9A%84%E6%89%A9%E5%B1%95%E6%80%A7%E5%92%8C%E5%BC%B9%E6%80%A7/#more">Read On »</a>
+          </div>
+        
+      
+    </div>
+</article>
+
+    </li>
+  
+    <li>
+      <article class='ListView'>
+    <header class="title">
+      
+        <h1>
           <a href="/blog/2021/07/19/%E6%9F%A5%E8%AF%A2%E4%B8%8E%E5%88%86%E6%9E%90/">查询与分析</a>
         </h1>
       
@@ -327,92 +424,6 @@
         
           <div class="more-link">
             <a href="/blog/2021/05/23/%E5%89%8D%E7%BC%80%E6%A0%91Trie%E7%9A%84%E5%AE%9E%E7%8E%B0/#more">Read On »</a>
-          </div>
-        
-      
-    </div>
-</article>
-
-    </li>
-  
-    <li>
-      <article class='ListView'>
-    <header class="title">
-      
-        <h1>
-          <a href="/blog/2021/03/05/Eureka%E9%99%90%E6%B5%81%E5%99%A8RateLimiter%E6%BA%90%E7%A0%81/">Eureka限流器RateLimiter源码</a>
-        </h1>
-      
-      <div class='ListMeta'>
-  <time datetime="2021-03-05T06:30:07.000Z" itemprop="datePublished">
-    2021-03-05
-  </time>
-  
-  
-  / 
-  <ul>
-    
-  <li class="meta-text">
-  { <a href="/blog/categories/SpringCloud/">SpringCloud</a> }
-  </li>
-
-  <li class="meta-text">
-  { <a href="/blog/categories/SpringCloud/Eureka/">Eureka</a> }
-  </li>
-
-
-  </ul>
-  
-</div>
-
-    </header>
-    <div>
-      
-        <h3 id="Eureka限流器RateLimiter源码"><a href="#Eureka限流器RateLimiter源码" class="headerlink" title="Eureka限流器RateLimiter源码"></a>Eureka限流器RateLimiter源码</h3><p>Eureka中ReteLimiter基于令牌桶算法实现。令牌桶算法的实现原理是系统以一个恒定的速率往桶中放入令牌，请求进来时先从通知获取一个令牌，若此时桶中无令牌可用则拒绝服务。</p>
-        
-          <div class="more-link">
-            <a href="/blog/2021/03/05/Eureka%E9%99%90%E6%B5%81%E5%99%A8RateLimiter%E6%BA%90%E7%A0%81/#more">Read On »</a>
-          </div>
-        
-      
-    </div>
-</article>
-
-    </li>
-  
-    <li>
-      <article class='ListView'>
-    <header class="title">
-      
-        <h1>
-          <a href="/blog/2021/03/03/How%20dose%20@EnableEurekaServer%20work%20in%20Spring%20Cloud?/">Spring Cloud中@EnableEurekaServer如何启动Eureka Server</a>
-        </h1>
-      
-      <div class='ListMeta'>
-  <time datetime="2021-03-03T10:01:51.000Z" itemprop="datePublished">
-    2021-03-03
-  </time>
-  
-  
-  / 
-  <ul>
-    
-  <li class="meta-text">
-  { <a href="/blog/categories/SpringCloud/">SpringCloud</a> }
-  </li>
-
-
-  </ul>
-  
-</div>
-
-    </header>
-    <div>
-      
-        <h3 id="How-dose-EnableEurekaServer-work-in-Spring-Cloud"><a href="#How-dose-EnableEurekaServer-work-in-Spring-Cloud" class="headerlink" title="How dose @EnableEurekaServer work in Spring Cloud?"></a>How dose @EnableEurekaServer work in Spring Cloud?</h3><p>We often use an annotation called @EnableEurekaServer to start the Eureka Server in Spring Cloud, but how dose it work? I will explain the process by reading the source code in this blog.</p>
-        
-          <div class="more-link">
-            <a href="/blog/2021/03/03/How%20dose%20@EnableEurekaServer%20work%20in%20Spring%20Cloud?/#more">Read On »</a>
           </div>
         
       

@@ -1,0 +1,129 @@
+<!DOCTYPE html>
+<html lang="zh-cmn-Hans">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <meta http-equiv="X-UA-Compatible" content="ie=edge">
+  <title>集群节点与分片的扩展性和弹性 | Why So Serious?</title>
+  
+    <link rel="icon" href="/blog/assets/smile.JPG">
+  
+  
+  
+  <!--link rel="stylesheet" href="//cdn.jsdelivr.net/highlight.js/9.10.0/styles/github-gist.min.css"-->
+  
+<link rel="stylesheet" href="//cdn.jsdelivr.net/highlight.js/9.10.0/styles/github-gist.min.css">
+
+  
+<link rel="stylesheet" href="/blog/css/style.css">
+
+<meta name="generator" content="Hexo 5.3.0"></head>
+
+<body>
+<div class="Shell">
+    <aside class='SideBar'>
+    <section class='avatar' style="background-image: url(/blog/assets/header.png)">
+        <div class='av-pic' style="background-image: url(/blog/assets/avatar.jpg)">
+        </div>
+    </section>
+    <section class='menu'>
+        <div>Why So Serious?</div>
+        
+        <ul>
+          
+            <a href="/blog/" class="Btn">
+              <li>Home</li>
+            </a>  
+          
+            <a href="/blog/categories/" class="Btn">
+              <li>Categories</li>
+            </a>  
+          
+            <a href="/blog/about/" class="Btn">
+              <li>About</li>
+            </a>  
+          
+        </ul>
+    </section>
+    <section class="media">
+        
+    </section>
+</aside>
+
+    <div class="container">
+        <div data-pager-shell>
+            <div>
+  <article class='ContentView'>
+    <header class='PageTitle'>
+        <h1>集群节点与分片的扩展性和弹性</h1>
+    </header>
+
+    <section>
+      <p>Elasticsearch是高可用并可以根据用户需求进行拓展的，原因是它的分布式特性。你可以向集群添加节点来提升集群能力然后ES会将你的数据和查询分布到所有可用节点上。你无需更改自己的应用，ES知道如何平衡多节点集群以提供高可用和可扩展性。节点越多，集群越强。</p>
+<a id="more"></a>
+
+<p>高可用和可扩展是如何实现的呢？实际上，ES索引只是一个或多个物理分片的逻辑分组，其中每个分片实际上是一个自包含的索引。通过将一个索引中的文档分布到多个分片且将多个分片分布到多个节点上，ES保证了数据的冗余，这种机制防止硬件出错的情况并且可以在新的节点加入集群时提高查询能力。当一个集群节点增多或者缩减，ES会自动迁移分片并重新平衡集群。</p>
+<p>分片有两种类型：主分片和副本分片。一个索引中的每个文档都属于某一个主分片，副本分片是主分片的拷贝，这种复制机制提供数据的冗余副本以防止硬件故障，并提高服务读取请求如搜索或检索文档的容量。</p>
+<p>一个索引的主分片数量是固定的，在索引创建时指定，但是副本分片的数量在不会中断索引和查询操作的情况下可随意更改。</p>
+<h3 id="需要考虑的事情"><a href="#需要考虑的事情" class="headerlink" title="需要考虑的事情"></a>需要考虑的事情</h3><p>关于分片大小和为索引配置的主分片数量，有许多性能方面的考虑和权衡。分片越多，维护这些索引的开销就越大。分片大小越大，当ES需要重新平衡集群时移动分片花的时间就越久。</p>
+<p>查询大量的小分片可以使每个分片的处理速度更快，但是查询越多意味着开销越大，因此查询少量的大分片可能会更快。总之这要视情况而定。</p>
+<p>最开始的参考：</p>
+<ul>
+<li>尽量将分片大小控制在几GB到几十GB之间。对于基于时间的数据，通常情况下分片大小在20GB-40GB之间。</li>
+<li>避免分片过多问题。一个节点上的分片数量应该与其堆空间大小成比例，一般来说，每GB的堆空间对应的分片数量应该少于20个。</li>
+</ul>
+<p>决定这些配置最好的方式就是根据自己的使用场景进行测试。</p>
+<h3 id="故障发生情况"><a href="#故障发生情况" class="headerlink" title="故障发生情况"></a>故障发生情况</h3><p>出于性能考虑，在一个集群中的节点应该使用同一个网络。在不同的数据中心节点之间平衡集群中的分片花费的时间太长了，但是高可用架构要求你不能把所有鸡蛋放在一个篮子里。当一个位置发生重大故障时，另一个位置的服务器需要能够无缝接管服务。实现的方案就是跨集群复制<em>Cross-cluster replication</em>（CCR）</p>
+<p>CCR提供了一种从主集群自动同步索引到可作为热备份的辅助原创集群的方法。如果主集群挂了，辅助集群可以接管。你也可以使用CCR创建辅助集群以服务与用户地理位置相近的读请求。</p>
+<p>跨集群复制是主备复制。主集群上的索引是领导索引，负责处理所有写请求。辅助集群上的索引仅可以处理读请求。</p>
+<p><a target="_blank" rel="noopener" href="https://www.elastic.co/guide/en/elasticsearch/reference/current/scalability.html">原文</a></p>
+
+
+      
+
+    </section>
+    
+      <section class='ArticleMeta'>
+          <div>
+            发布于&nbsp;
+            <time datetime="2021-07-20T06:43:24.000Z" itemprop="datePublished">
+              2021-07-20
+            </time>
+          </div>
+          
+      </section>
+    
+    
+</article>
+
+  
+</div>
+
+            <footer>
+    <div>© 2021 - Levi </div>
+    <div>
+        <span>
+<!--            Powered by <a target="_blank" rel="noopener" href="https://hexo.io">Hexo</a>-->
+            Homo sum, humani nihil a me alienum puto
+        </span>
+    </div>
+<!--    {% if theme.footer.counter %}-->
+    <script async src="//busuanzi.ibruce.info/busuanzi/2.3/busuanzi.pure.mini.js"></script>
+    <span id="busuanzi_container_site_pv">Views <span id="busuanzi_value_site_pv"></span> </span>
+    <span class="post-meta-divider">|</span>
+    <span id="busuanzi_container_site_uv">Visitors <span id="busuanzi_value_site_uv"></span> </span>
+<!--    {% endif %}-->
+</footer>
+
+        </div>
+    </div>
+</div>
+
+<script src="/blog/js/pager/dist/singlepager.js"></script>
+
+<script>
+var sp = new Pager('data-pager-shell')
+
+</script>
+</body>
+</html>
