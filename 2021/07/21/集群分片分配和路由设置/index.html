@@ -1,0 +1,213 @@
+<!DOCTYPE html>
+<html lang="zh-cmn-Hans">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <meta http-equiv="X-UA-Compatible" content="ie=edge">
+  <title>集群分片分配和路由设置 | Why So Serious?</title>
+  
+    <link rel="icon" href="/blog/assets/smile.JPG">
+  
+  
+  
+  <!--link rel="stylesheet" href="//cdn.jsdelivr.net/highlight.js/9.10.0/styles/github-gist.min.css"-->
+  
+<link rel="stylesheet" href="//cdn.jsdelivr.net/highlight.js/9.10.0/styles/github-gist.min.css">
+
+  
+<link rel="stylesheet" href="/blog/css/style.css">
+
+<meta name="generator" content="Hexo 5.3.0"></head>
+
+<body>
+<div class="Shell">
+    <aside class='SideBar'>
+    <section class='avatar' style="background-image: url(/blog/assets/header.png)">
+        <div class='av-pic' style="background-image: url(/blog/assets/avatar.jpg)">
+        </div>
+    </section>
+    <section class='menu'>
+        <div>Why So Serious?</div>
+        
+        <ul>
+          
+            <a href="/blog/" class="Btn">
+              <li>Home</li>
+            </a>  
+          
+            <a href="/blog/categories/" class="Btn">
+              <li>Categories</li>
+            </a>  
+          
+            <a href="/blog/about/" class="Btn">
+              <li>About</li>
+            </a>  
+          
+        </ul>
+    </section>
+    <section class="media">
+        
+    </section>
+</aside>
+
+    <div class="container">
+        <div data-pager-shell>
+            <div>
+  <article class='ContentView'>
+    <header class='PageTitle'>
+        <h1>集群分片分配和路由设置</h1>
+    </header>
+
+    <section>
+      <p>分片分配是将分片分配给节点的过程，这个过程可以发生在初始恢复、副本分配、重新平衡、添加或者删除节点时。</p>
+<p>主节点的任务之一就是决定哪个分片被分配到哪个节点上，并在集群重新平衡时在节点之间进行分片转移。</p>
+<p>控制分片分配过程有以下几种设置：</p>
+<ul>
+<li>集群级别的分配设置：控制分配和重新平衡操作</li>
+<li>基于硬盘的分配设置：解释ES如何考虑可用磁盘空间以及相关设置</li>
+<li>Shard allocation awareness和Forced awareness：控制如何在不同的机架或者可用区之间分配分片</li>
+<li>集群级别的分片分配过滤器：允许从分配中排除某些节点或者节点组，以便它们可以退役</li>
+<li>另外还有一些其他设置</li>
+</ul>
+<a id="more"></a>
+
+<h3 id="集群级别分片分配设置"><a href="#集群级别分片分配设置" class="headerlink" title="集群级别分片分配设置"></a>集群级别分片分配设置</h3><p><strong>cluster.routing.allocation.enable</strong></p>
+<p>根据分片类型决定是否开启分配，分片类型有：</p>
+<ul>
+<li>all，默认值，所有类型的分片</li>
+<li>primaries，仅对于主分片</li>
+<li>new_primaries，仅对于新索引的主分片</li>
+<li>none，所有类型的分片都不用进行分配</li>
+</ul>
+<p>这个设置不会影响当节点重启时本地主分片的恢复。拥有一个未分配主分片的副本的节点在重启时会立即恢复该主分片，假设它的分配ID与集群状态中的一个活跃分配ID相匹配。</p>
+<p><strong>cluster.routing.allocation.node_concurrent_incoming_recoveries</strong></p>
+<p>分片被分配到当前节点的最大并发数量，默认为2。</p>
+<p><strong>cluster.routing.allocation.node_concurrent_outgoing_recoveries</strong></p>
+<p>当前分片被分配到其他节点的最大并发数量，默认为2.</p>
+<p><strong>cluster.routing.allocation.node_initial_primaries_recoveries</strong></p>
+<p>当副本的恢复通过网络进行时，节点重启后未分配的主节点的恢复将使用来自本地磁盘的数据。这些恢复应该很快所以可以让初始主分片恢复在同一个节点上并行执行，并行数量默认为4。</p>
+<p><strong>cluster.routing.allocation.same_shard.host</strong></p>
+<p>根据主机名和主机地址来检查并组织在同一台主机上的不同实例之间进行分片分配，默认为false。</p>
+<h3 id="分片重新平衡设置"><a href="#分片重新平衡设置" class="headerlink" title="分片重新平衡设置"></a>分片重新平衡设置</h3><p>当一个集群中的每个节点上的每个索引的分片数量都是相等的，没有集中在某个节点上，那么集群就是平衡的。ES运行着一个名叫rebalancing的进程在集群中进行分片移动以保持其平衡性。重新平衡遵守所有分片分配规则比如allocation filtering和forced awareness，这些规则可能导致集群无法完全平衡。这种情况下，重新平衡会尽力在所配置的规则中实现最均衡的集群。如果你正在使用数据层，那么ES会自动使用allocation filter规则将每个分片放置在适当的层中。这些规则意味着平衡器在每一层都是独立工作的。</p>
+<p><strong>cluster.routing.rebalance.enable</strong></p>
+<p>同上</p>
+<p><strong>cluster.routing.allocation.allow_rebalance</strong></p>
+<p>分片重新平衡的条件：always， indices_primaries_active（所有主分片都已经被分配），indices_all_active（默认，所有主分片和副本分配都已经被分配）</p>
+<p><strong>cluster.routing.allocation.cluster_concurrent_rebalance</strong></p>
+<p>集群下分片重新分配的最大并发数量，默认为2。这个设置只会在集群不均衡触发重新分配时生效。</p>
+<h3 id="分片平衡启发式设置"><a href="#分片平衡启发式设置" class="headerlink" title="分片平衡启发式设置"></a>分片平衡启发式设置</h3><p>通过计算一个节点上已被分配的分片计算其权重，通过降低权重高的节点提升权重低的节点来达到集群平衡。集群平衡意味着无法再通过分片移动来使任意节点间的权重差值更小于一个配置的阈值。可以配置这个计算规则：</p>
+<p><strong>cluster.routing.allocation.balance.shard</strong></p>
+<p>定义在节点上分配的分片总数的权重因子，默认为0.45f。提高这个值就提高了集群中所有节点上分片数量保持一致的趋势。</p>
+<p><strong>cluster.routing.allocation.balance.index</strong></p>
+<p>定义分配在节点上的每个索引的分片数的权重因子，默认为0.55f。每个索引的分片数量趋于一致。</p>
+<p><strong>cluster.routing.allocation.balance.threshold</strong></p>
+<p>即上面提到的阈值，大于该值时会继续进行平衡优化操作。</p>
+<h3 id="基于磁盘的分配设置"><a href="#基于磁盘的分配设置" class="headerlink" title="基于磁盘的分配设置"></a>基于磁盘的分配设置</h3><p>基于磁盘的分片分配器确保所有节点都有足够的磁盘空间，而无需执行不必要的分片移动。它根据低水位和高水位这一对阈值来分配分片。它的主要目标是确保没有节点超过高水位，或者至少这种超过只是暂时的。如果一个节点超过了高水位，那么ES将通过将它的一些分片移动到集群中的其他节点来解决这个问题。</p>
+<p>分配器还试图通过禁止将更多分片分配给超过低水位线的节点来使节点远离高水位线。 重要的是，如果你的所有节点都超过了低水位线，则无法分配新的分片，并且 ES将无法在节点之间移动任何分片以将磁盘使用率保持在高水位线以下。 你必须确保您的集群总共有足够的磁盘空间，并且始终有一些节点低于低水位线。</p>
+<p>基于磁盘分配的策略也得遵守分片移动规则。数据层同上，每层独立工作。</p>
+<p>如果节点填满其磁盘的速度比 Elasticsearch 将分片移动到其他地方的速度快，则存在磁盘完全填满的风险。 为了防止这种情况，作为最后的手段，一旦磁盘使用量达到洪水位，Elasticsearch 将阻止写入受影响节点上的分片索引。 它还将继续将分片移动到集群中的其他节点上。 当受影响节点上的磁盘使用率低于高水位线时，Elasticsearch 会自动删除写入块。</p>
+<p>配置项：</p>
+<p><strong>cluster.routing.allocation.disk.threshold_enabled</strong></p>
+<p><strong>cluster.routing.allocation.disk.watermark.low</strong></p>
+<p>磁盘使用率的低水位，默认值为85%，超过这个值时ES将不会分配分片到该节点上。这个设置不会对新创建索引的主分片产生影响，但会阻止它们的副本分片被分配到该节点。</p>
+<p><strong>cluster.routing.allocation.disk.watermark.high</strong></p>
+<p>磁盘使用率高水位，默认值为90%，超过这个值时ES会尝试将该节点上的分片进行重新分配。这个设置会影响所有分片。</p>
+<p><strong>cluster.routing.allocation.disk.watermark.enable_for_single_data_node</strong></p>
+<p>单个数据节点是否需要忽视磁盘水位设置</p>
+<p><strong>cluster.routing.allocation.disk.watermark.flood_stage</strong></p>
+<p>磁盘使用率洪水位，默认值为95%，达到这个值时ES会将每个索引设置为只读。</p>
+<p><strong>cluster.routing.allocation.disk.watermark.flood_stage.frozen</strong></p>
+<p><strong>cluster.routing.allocation.disk.watermark.flood_stage.frozen.max_headroom</strong></p>
+<p><strong>cluster.info.update.interval</strong></p>
+<p>检查磁盘使用率的频率，默认为30s</p>
+<h3 id="分片分配感知"><a href="#分片分配感知" class="headerlink" title="分片分配感知"></a>分片分配感知</h3><p>你可以使用自定义节点属性作为感知属性，以便使ES在分配分片时考虑物理硬件配置。如果ES知道哪些节点位于同一物理服务器，同一机架或者同一区域中，那么它可以分布主分片及其副本分片，以最大限度地降低在故障时丢失所有分片副本的风险。</p>
+<p>当分片分配感知启用时，分片仅会被分配到那些设置了感知属性值的节点。如果有多个感知属性值，ES在分配分片时会独立考虑每个属性值。</p>
+<p>默认情况下，ES使用自适应副本选择策略来路由搜索或者GET请求。但是当有分配感知属性存在时，ES会优先使用相同位置（有相同感知属性）的分片来处理请求，这个行为可以通过设置来禁用<em>export ES_JAVA_OPTS=”$ES_JAVA_OPTS -Des.search.ignore_awareness_attributes=true”</em></p>
+<h4 id="启用分片分配感知"><a href="#启用分片分配感知" class="headerlink" title="启用分片分配感知"></a>启用分片分配感知</h4><ol>
+<li><p>用自定义的节点属性来表明每个节点的位置。例如，如果你想ES将分片分配到不同的机架中，你可以在每个节点的<em>elasticsearch.yml</em>文件中配置叫做<em>rack_id</em>的感知属性</p>
+<figure class="highlight java"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><code class="hljs java">node.attr.rack_id: rack_one<br></code></pre></td></tr></table></figure>
+<p>你也可以在启动一个节点时设置自定义属性</p>
+<figure class="highlight java"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><code class="hljs java">`./bin/elasticsearch -Enode.attr.rack_id=rack_one`<br></code></pre></td></tr></table></figure>
+
+</li>
+<li><p>告诉ES在分配分片时需要考虑到一个或多个感知属性，通过在每个主节点的配置文件<em>elasticsearch.yml</em>中设置<em>cluster.routing.allocation.awareness.attributes</em></p>
+<figure class="highlight java"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><code class="hljs java">cluster.routing.allocation.awareness.attributes: rack_id <br></code></pre></td></tr></table></figure>
+
+
+</li>
+</ol>
+<p>在这个例子中，如果你想启动两个具有<em>node.attr.rack_id：rack_one</em>属性的节点，并创建有5个主分片和1个副本分片的索引，那么所有的主副分片都会在这两个节点之间进行分配。</p>
+<p>如果你添加了两个具有<em>node.attr.rack_id：rack_two</em>属性的节点，ES会将部分分片移动到新节点，并保证一个分片的两个副本不会出现在同一机架中。</p>
+<p>如果机架2挂了并关闭了它的两个节点，默认情况ES将丢失的分片副本分配给1号机架中节点。为了防止在同一个位置分片特定分片的多个副本，可以启用强制感知。（Force awareness）</p>
+<h3 id="强制感知"><a href="#强制感知" class="headerlink" title="强制感知"></a>强制感知</h3><p>默认情况下，如果一个位置失败，Elasticsearch会将所有丢失的副本分片分配给其余的位置。虽然您可能在所有位置都有足够的资源来托管主分片和副本分片，但单个位置可能无法托管所有分片。</p>
+<p>为了防止出现故障时单个位置过载，你可以设置<em>cluster.routing.allocation.awareness.force</em>，以便在另一个位置的节点可用之前不分配副本。</p>
+<p>例如，如果你有一个名为zone的感知属性，并且在zone1和zone2中配置了节点，那么你可以使用强制感知来防止Elasticsearch在只有一个可用的zone时分配副本</p>
+<figure class="highlight java"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br></pre></td><td class="code"><pre><code class="hljs java">cluster.routing.allocation.awareness.attributes: zone<br>cluster.routing.allocation.awareness.force.zone.values: zone1,zone2 <br></code></pre></td></tr></table></figure>
+
+
+<h3 id="集群级分片分配过滤"><a href="#集群级分片分配过滤" class="headerlink" title="集群级分片分配过滤"></a>集群级分片分配过滤</h3><p>你可以使用集群级分片分配过滤器来控制Elasticsearch从任何索引中分配分片的位置。这些集群范围的过滤器与逐索引分配过滤和分配感知一起应用。</p>
+<p>分片分配过滤器可以基于自定义节点属性或内置的<em>_name</em>,<em>host_ip</em>, <em>_publish_ip</em>, <em>_ip</em>, <em>_host</em>, <em>_id</em>, <em>_tier</em>属性。</p>
+<h3 id="其他集群设置"><a href="#其他集群设置" class="headerlink" title="其他集群设置"></a>其他集群设置</h3><h4 id="元数据"><a href="#元数据" class="headerlink" title="元数据"></a>元数据</h4><p>整个集群可以通过以下设置来使它只读：</p>
+<p><strong>cluster.blocks.read_only</strong></p>
+<p><strong>cluster.blocks.read_only_allow_delete</strong></p>
+<h4 id="集群分片限制"><a href="#集群分片限制" class="headerlink" title="集群分片限制"></a>集群分片限制</h4><p>基于集群中的节点数量，集群中的分片数会有一个软限制，这是为了防止无意中破坏集群稳定的操作。</p>
+<p>如果某个操作(如创建新索引、恢复索引的快照或打开一个关闭的索引)会导致集群中的分片数量超过该限制，则该操作将失败，并报出提示分片限制的错误。</p>
+<p>如果集群由于节点变动或者设置变动已经超出限制，所有创建和打开索引的操作都会失败直到提升下面所说的限制或者关闭/删除一些索引来使分片数量低于限制。</p>
+<p>集群分片限制对于普通（非冻结）索引默认为每个非冻结数据节点 1,000 个分片，对于冻结索引每个冻结数据节点默认为 3000 个分片。 所有开放索引的主分片和副本分片都计入限制，包括未分配的分片。 例如，具有 5 个主分片和 2 个副本的开放索引计为 15 个分片。 已经关闭的索引不影响分片计数。</p>
+<p><strong>cluster.max_shards_per_node</strong></p>
+<p>集群中主副分片的总数量限制。</p>
+<p>Elasticsearch 拒绝任何创建超过此限制允许的分片的请求。 例如，一个 cluster.max_shards_per_node 设置为 100 和三个数据节点的集群的分片限制为 300。如果集群已经包含 296 个分片，Elasticsearch 会拒绝任何向集群添加五个或更多分片的请求。</p>
+<p><strong>cluster.max_shards_per_node.frozen</strong></p>
+<p>集群的主和副本冻结分片总数的限制。</p>
+<p>Elasticsearch 拒绝任何创建超过此限制允许的冻结分片的请求。 例如，一个 cluster.max_shards_per_node.frozen 设置为 100 和三个冻结数据节点的集群的冻结分片限制为 300。如果集群已经包含 296 个分片，Elasticsearch 会拒绝任何向集群添加五个或更多冻结分片的请求 。</p>
+<p><a target="_blank" rel="noopener" href="https://www.elastic.co/guide/en/elasticsearch/reference/current/modules-cluster.html">原文</a></p>
+
+
+      
+
+    </section>
+    
+      <section class='ArticleMeta'>
+          <div>
+            发布于&nbsp;
+            <time datetime="2021-07-21T03:40:59.000Z" itemprop="datePublished">
+              2021-07-21
+            </time>
+          </div>
+          
+      </section>
+    
+    
+</article>
+
+  
+</div>
+
+            <footer>
+    <div>© 2021 - Levi </div>
+    <div>
+        <span>
+<!--            Powered by <a target="_blank" rel="noopener" href="https://hexo.io">Hexo</a>-->
+            Homo sum, humani nihil a me alienum puto
+        </span>
+    </div>
+<!--    {% if theme.footer.counter %}-->
+    <script async src="//busuanzi.ibruce.info/busuanzi/2.3/busuanzi.pure.mini.js"></script>
+    <span id="busuanzi_container_site_pv">Views <span id="busuanzi_value_site_pv"></span> </span>
+    <span class="post-meta-divider">|</span>
+    <span id="busuanzi_container_site_uv">Visitors <span id="busuanzi_value_site_uv"></span> </span>
+<!--    {% endif %}-->
+</footer>
+
+        </div>
+    </div>
+</div>
+
+<script src="/blog/js/pager/dist/singlepager.js"></script>
+
+<script>
+var sp = new Pager('data-pager-shell')
+
+</script>
+</body>
+</html>
