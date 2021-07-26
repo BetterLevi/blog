@@ -64,6 +64,54 @@
     <header class="title">
       
         <h1>
+          <a href="/blog/2021/07/26/Elasticsearch%E8%BF%91%E5%AE%9E%E6%97%B6%E6%90%9C%E7%B4%A2%E4%B8%8ETranslog/">Elasticsearch近实时搜索与Translog</a>
+        </h1>
+      
+      <div class='ListMeta'>
+  <time datetime="2021-07-26T07:39:11.000Z" itemprop="datePublished">
+    2021-07-26
+  </time>
+  
+  
+  / 
+  <ul>
+    
+  <li class="meta-text">
+  { <a href="/blog/categories/BigData/">BigData</a> }
+  </li>
+
+  <li class="meta-text">
+  { <a href="/blog/categories/BigData/Elasticsearch/">Elasticsearch</a> }
+  </li>
+
+
+  </ul>
+  
+</div>
+
+    </header>
+    <div>
+      
+        <p>Elasticsearch基于Lucene，Lucene搜索是按segment进行的，每一个segment本身就是一个倒排索引，一个Lucene倒排索引包含segment集合和一个提交点（是一个列出了所有已知segment的文件）。新的文档首先被添加到内存的lucene索引缓存中，然后写入到一个基于磁盘的segment，在一次提交后，一个新的segment被添加到提交点并且清空缓存。</p>
+<blockquote>
+<p>一个Lucene索引在ES中就是一个分片，一个ES索引是分片的集合，即一个ES索引是Lucene索引的集合。当ES在ES索引中搜索的时候，它发送查询到每一个属于ES索引的分片（Lucene 索引）上，然后执行分布式检索，合并每个分片的结果到一个全局结果集</p>
+</blockquote>
+        
+          <div class="more-link">
+            <a href="/blog/2021/07/26/Elasticsearch%E8%BF%91%E5%AE%9E%E6%97%B6%E6%90%9C%E7%B4%A2%E4%B8%8ETranslog/#more">Read On »</a>
+          </div>
+        
+      
+    </div>
+</article>
+
+    </li>
+  
+    <li>
+      <article class='ListView'>
+    <header class="title">
+      
+        <h1>
           <a href="/blog/2021/07/23/Elasticsearch%E5%9F%BA%E4%BA%8E%E4%BB%B2%E8%A3%81%E7%9A%84%E9%80%89%E4%B8%BE%E7%AD%96%E7%95%A5/">Elasticsearch基于仲裁的选举策略</a>
         </h1>
       
