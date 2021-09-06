@@ -54,18 +54,22 @@
         <div data-pager-shell>
             <ul class="Index">
   
+    <header class='PageTitle'>
+        <h1>{ Spark }</h1>
+    </header>
+  
   
     <li>
       <article class='ListView'>
     <header class="title">
       
         <h1>
-          <a href="/blog/2021/01/30/QuickSort/">快速排序算法</a>
+          <a href="/blog/2021/09/06/Spark%E7%9B%B8%E5%85%B3%E7%9F%A5%E8%AF%86/">Spark相关知识</a>
         </h1>
       
       <div class='ListMeta'>
-  <time datetime="2021-01-30T12:39:46.000Z" itemprop="datePublished">
-    2021-01-30
+  <time datetime="2021-09-06T10:41:08.000Z" itemprop="datePublished">
+    2021-09-06
   </time>
   
   
@@ -73,7 +77,11 @@
   <ul>
     
   <li class="meta-text">
-  { <a href="/blog/categories/Algorithm/">Algorithm</a> }
+  { <a href="/blog/categories/BigData/">BigData</a> }
+  </li>
+
+  <li class="meta-text">
+  { <a href="/blog/categories/BigData/Spark/">Spark</a> }
   </li>
 
 
@@ -84,70 +92,15 @@
     </header>
     <div>
       
-        <h3 id="介绍"><a href="#介绍" class="headerlink" title="介绍"></a>介绍</h3><p>快速排序算法是一种基于分治思想的排序算法，分治思想有以下特点：</p>
-<ol>
-<li>将一个问题可划分为同一类型的若干个子问题，子问题的规模相同或者相近</li>
-<li>求解这些子问题，然后合并这些子问题的解，可得到原问题的答案</li>
+        <h3 id="Spark特点"><a href="#Spark特点" class="headerlink" title="Spark特点"></a>Spark特点</h3><ol>
+<li>快：与Hadoop的MapReduce相比，Spark基于内存的运算要快100倍以上，基于硬盘的运算也要快10倍以上，Spark实现了高效的DAG执行引擎，可以基于内存来高效处理数据流</li>
+<li>易用：Spark支持Java，Python，R，Scala的API，还支持超过80种高级算法，使用户可以快速构建不同的应用。也支持交互式的python和scala的shell，可以很方便的在shell中使用spark来验证解决问题的方法</li>
+<li>通用：spark提供了统一的解决方案。Spark可以用于批处理，交互式查询Spark SQL，实时流处理Spark Streaming，机器学习MLlib和图计算GraphX。</li>
+<li>兼容性：Spark可以很方便的与其他开源产品进行融合。Spark可以使用Hadoop 的YARN和Apache     Mesos作为它的资源管理和调度器，并且可以处理所有Hadoop支持的数据，包括HDFS，HBase和Cassandra等。Spark也可以不依赖于第三方的资源管理和调度器，它实现了Standalone作为其内置的资源管理和调度框架，降低了Spark的使用门槛。</li>
 </ol>
         
           <div class="more-link">
-            <a href="/blog/2021/01/30/QuickSort/#more">Read On »</a>
-          </div>
-        
-      
-    </div>
-</article>
-
-    </li>
-  
-    <li>
-      <article class='ListView'>
-    <header class="title">
-      
-        <h1>
-          <a href="/blog/2021/01/29/%E8%82%A1%E7%A5%A8%E4%B9%B0%E5%8D%96%E7%9A%84%E6%9C%80%E4%BD%B3%E6%97%B6%E9%97%B4III/">股票的最佳买卖时间III</a>
-        </h1>
-      
-      <div class='ListMeta'>
-  <time datetime="2021-01-29T08:56:19.000Z" itemprop="datePublished">
-    2021-01-29
-  </time>
-  
-  | 
-  <ul>
-    
-  <li class="meta-text">
-  { <a href="/blog/tags/Algorithm/">Algorithm</a> }
-  </li>
-
-
-  </ul>
-  
-  
-  / 
-  <ul>
-    
-  <li class="meta-text">
-  { <a href="/blog/categories/Algorithm/">Algorithm</a> }
-  </li>
-
-  <li class="meta-text">
-  { <a href="/blog/categories/Algorithm/Leetcode/">Leetcode</a> }
-  </li>
-
-
-  </ul>
-  
-</div>
-
-    </header>
-    <div>
-      
-        <p><a target="_blank" rel="noopener" href="https://leetcode.com/problems/best-time-to-buy-and-sell-stock-iii/discuss/135704/Detail-explanation-of-DP-solution">原文链接</a></p>
-<h3 id="题目描述："><a href="#题目描述：" class="headerlink" title="题目描述："></a>题目描述：</h3><p>给定一个数组， 它的第i个元素是一支给定的股票在第i天的价格。设计一个算法来计算你所能获取的最大利润，最多可完成两笔交易，且不能同时参与多笔交易，即再次购买之前必须出售掉之前的股票。</p>
-        
-          <div class="more-link">
-            <a href="/blog/2021/01/29/%E8%82%A1%E7%A5%A8%E4%B9%B0%E5%8D%96%E7%9A%84%E6%9C%80%E4%BD%B3%E6%97%B6%E9%97%B4III/#more">Read On »</a>
+            <a href="/blog/2021/09/06/Spark%E7%9B%B8%E5%85%B3%E7%9F%A5%E8%AF%86/#more">Read On »</a>
           </div>
         
       
@@ -157,12 +110,6 @@
     </li>
   
 </ul>
-
-  <section id="nav-wrapper">
-    <nav id="page-nav">
-      <a class="extend prev" rel="prev" href="/blog/page/2/">« prev</a><a class="page-number" href="/blog/">1</a><a class="page-number" href="/blog/page/2/">2</a><span class="page-number current">3</span>
-    </nav>
-  </section>
 
 
             <footer>
