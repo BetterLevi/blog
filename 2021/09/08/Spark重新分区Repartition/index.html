@@ -63,7 +63,7 @@
 <a id="more"></a>
 
 <p>根据经验来看，使用repartition消耗较大因为该操作会导致shuffle。这篇文章中我们将更加深入的探讨在某些情景下，在合适的位置增加一个shuffle并移除其他两个shuffle会使整体执行更加高效。我们先来了解一些概念来理解关于数据分布的信息在Spark SQL中是如何内部利用的，然后再介绍一些使用repartition的实际示例。</p>
-<p>本篇文章中提到的概念基于Spark源代码，版本为snapshot3.1，大多数概念也适用于先前的版本2.x。冰鞋这些理论和内部行为对语言是透明的，跟我们用Scala，Java或者是Python API使用无关。</p>
+<p>本篇文章中提到的概念基于Spark源代码，版本为snapshot3.1，大多数概念也适用于先前的版本2.x。并且这些理论和内部行为对语言是透明的，跟我们用Scala，Java或者是Python API使用无关。</p>
 <h3 id="查询计划Query-Plan"><a href="#查询计划Query-Plan" class="headerlink" title="查询计划Query Plan"></a>查询计划Query Plan</h3><p>Spark SQL的DataFrame API允许用户实现高级transfomations，这些transformations是惰性的，这意味着它们不会立即执行而是在引擎上被转换成一个查询计划。当用户调用一个需要输出结果的action时，查询计划才会被具体化，比如我们正在把transformation的结果保存到一些存储系统中。查询计划本身可以被分为两种类型：一个逻辑计划和一个物理计划。查询计划执行的过程取决于逻辑计划与物理计划。</p>
 <h3 id="逻辑计划Logical-Plan"><a href="#逻辑计划Logical-Plan" class="headerlink" title="逻辑计划Logical Plan"></a>逻辑计划Logical Plan</h3><p>逻辑计划这个词代表着一个逻辑计划执行的多个步骤，逻辑计划本身就是一个查询的抽象表示，它是一个树形结构，树中的每个节点表示一个相关的操作。逻辑计划本身不会包括任何有关执行的具体信息或者用来计算转换Transformation的算法如聚合aggregation。它仅用一种方便优化的方式来表示查询的信息。</p>
 <p>在逻辑计划期间，查询计划会被Spark优化器进行优化，优化器会运用一系列用来转化计划的规则，这些规则大多数基于启发式，举个例子来说，在执行其他操作之前先对数据进行过滤是更好的（会减少内存占用）等等。</p>

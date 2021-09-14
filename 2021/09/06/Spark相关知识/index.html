@@ -144,7 +144,7 @@
 </li>
 </ol>
 <h3 id="Spark性能优化"><a href="#Spark性能优化" class="headerlink" title="Spark性能优化"></a>Spark性能优化</h3><ol>
-<li>RDD复用</li>
+<li>RDD复用<br>使用缓存，缓存将DataFrame，数据表或者RDD放入集群中执行器的临时存储区（内存或磁盘），这将使后续读取更快。但是缓存数据会导致序列化，反序列化和存储开销。因此缓存适用于多次重复使用相同数据集的情形。</li>
 <li>尽早filter，减少对内存的占用</li>
 <li>读取大量小文件，使用wholeTextFiles</li>
 <li>合理使用mapPartition和foreachPartition</li>
