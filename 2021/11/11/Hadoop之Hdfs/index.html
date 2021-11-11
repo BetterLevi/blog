@@ -115,7 +115,7 @@
 <li>连接DataNode读取数据块：客户端通过调用*DFSInputStream.read()<em>方法，连接到离客户端最近的一个DataNode读取block，数据会以数据包packet（注：client向DataNode或DataNode pipline之间传输数据的基本单位，默认64kb）为单位从DataNode通过流式接口传给客户端直到一个数据块读取完成；DFSInputStream会再次调用</em>getBlockLocations()*方法，获取下一个最优节点上数据块的位置</li>
 <li>文件的所有block读取完成，调用close()方法，关闭输入流，释放资源</li>
 </ol>
-<h3 id="Hdfs写数据流程"><a href="#Hdfs写数据流程" class="headerlink" title="Hdfs写数据流程"></a>Hdfs写数据流程</h3><p>![Hdfs写流程](/images/Hdfs- write.png)</p>
+<h3 id="Hdfs写数据流程"><a href="#Hdfs写数据流程" class="headerlink" title="Hdfs写数据流程"></a>Hdfs写数据流程</h3><p><img src="/blog/images/Hdfs-write.png" alt="Hdfs写流程"></p>
 <ol>
 <li>在NameNode创建文件：当client写新文件时，调用*DistributedFileSystem.create()*方法，该方法中会生成一个DFSOutputStream对象，生成该对象时，会检查客户端是否已经打开；通过RPC与NameNode通信并创建新文件，构建出DFSOutputStream，该对象负责数据的写入</li>
 <li>建立数据流pipeline管道：客户端得到一个输出流对象，通过调用*ClientProtocol.addBlock()*向NameNode申请新的空block，addBlock()会返回一个LocateBlock对象，该对象保存可写入的DataNode信息，然后构成pipeline</li>
