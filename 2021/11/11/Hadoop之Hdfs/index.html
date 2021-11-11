@@ -80,10 +80,9 @@
 <li>记录文件中各个block所在的DataNode的位置信息，这些信息不会永久保存，在NameNode启动时，DataNode在向NameNode进行注册时进行缓存；</li>
 </ul>
 <h4 id="DataNode"><a href="#DataNode" class="headerlink" title="DataNode"></a>DataNode</h4><ul>
-<li><p>负责管理其节点上存储数据的读写，定期向NameNode发送心跳和文件块状态报告等</p>
-<h4 id="Secondary-NameNode"><a href="#Secondary-NameNode" class="headerlink" title="Secondary NameNode"></a>Secondary NameNode</h4></li>
+<li>负责管理其节点上存储数据的读写，定期向NameNode发送心跳和文件块状态报告等 </li>
 </ul>
-<p>NameNode启动时会生成整个文件系统的快照fsimage，启动后文件的改动信息记录在editlog(写过程由DataNode触发，当DataNode写文件操作后，与NameNode进行通信，告诉NameNode改文件的block信息，NameNode将这些信息保存在editlog中)，当NameNode重启时，editlog合并到fsimage中生成最新的系统快照。<br>          这种运行逻辑存在问题：</p>
+<h4 id="Secondary-NameNode"><a href="#Secondary-NameNode" class="headerlink" title="Secondary NameNode"></a>Secondary NameNode</h4><p>NameNode启动时会生成整个文件系统的快照fsimage，启动后文件的改动信息记录在editlog(写过程由DataNode触发，当DataNode写文件操作后，与NameNode进行通信，告诉NameNode改文件的block信息，NameNode将这些信息保存在editlog中)，当NameNode重启时，editlog合并到fsimage中生成最新的系统快照。<br>          这种运行逻辑存在问题：</p>
 <ol>
 <li>NameNode长时间不重启，editlog会变得很大；</li>
 <li>NameNode的重启会因为太大的editlog要合并到fsimage中而变得很慢；</li>
