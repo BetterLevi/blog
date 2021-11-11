@@ -97,7 +97,7 @@
 <li>NFS：一个共享的文件存储系统，Active NameNode写文件， Standby NameNode读文件，一旦不可用则数据无法继续同步。</li>
 <li>JN(Quorum Journal Manager): JournalNode集群，由2N+1个节点组成，最多可容忍N个节点挂掉，保证editlog日志文件共享存储系统的可用性。</li>
 </ul>
-<h4 id="架构图"><a href="#架构图" class="headerlink" title="架构图"></a>架构图</h4><p><img src="/blog/images/Hdfs-arcb1.png" alt="Hdfs架构组成"></p>
+<h4 id="架构图"><a href="#架构图" class="headerlink" title="架构图"></a>架构图</h4><p><img src="/blog/images/Hdfs-arch1.png" alt="Hdfs架构组成"></p>
 <p>由上图可以看出，NameNode的主备监控由ZKFC(ZKFailoverController)完成，ZKFC时独立运行的进程，每个ZKFC监控一个NameNode，当监控主节点的ZKFC发现主节点异常时，该ZKFC端开与ZooKeeper的连接，释放分布式锁，监控备用NameNode的ZKFC抢到锁并将其监控的Standby NameNode切换成Active NameNode。</p>
 <p>ZooKeeper为ZKFC实现故障转移提供统一协调服务。通过ZooKeeper中watcher的监听机制，通知ZKFC异常NameNode下线并保证同一时刻只有一个Active NameNode。</p>
 <h4 id="主备切换流程"><a href="#主备切换流程" class="headerlink" title="主备切换流程"></a>主备切换流程</h4><p>Hdfs集群刚启动时，NameNode节点状态都是Standby，之后每个NameNode节点都会启动ZKFC进程后去ZooKeeper集群抢占分布式锁，成功抢占分布式锁的NameNode会成为Active NameNode，之后ZKFC实时监控自己的NameNode。<br> Hdfs提供两种HA状态方式：<br> 一种是管理员运行命令 “DFSHAAdmin -failover”执行状态切换；另一种是自动切换。</p>
