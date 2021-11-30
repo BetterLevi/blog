@@ -1,0 +1,152 @@
+<!DOCTYPE html>
+<html lang="zh-cmn-Hans">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <meta http-equiv="X-UA-Compatible" content="ie=edge">
+  <title>Hadoop之MapReduce介绍 | Why So Serious?</title>
+  
+    <link rel="icon" href="/blog/assets/smile.JPG">
+  
+  
+  
+  <!--link rel="stylesheet" href="//cdn.jsdelivr.net/highlight.js/9.10.0/styles/github-gist.min.css"-->
+  
+<link rel="stylesheet" href="//cdn.jsdelivr.net/highlight.js/9.10.0/styles/github-gist.min.css">
+
+  
+<link rel="stylesheet" href="/blog/css/style.css">
+
+<meta name="generator" content="Hexo 5.3.0"></head>
+
+<body>
+<div class="Shell">
+    <aside class='SideBar'>
+    <section class='avatar' style="background-image: url(/blog/assets/header.png)">
+        <div class='av-pic' style="background-image: url(/blog/assets/avatar.jpg)">
+        </div>
+    </section>
+    <section class='menu'>
+        <div>Why So Serious?</div>
+        
+        <ul>
+          
+            <a href="/blog/" class="Btn">
+              <li>Home</li>
+            </a>  
+          
+            <a href="/blog/categories/" class="Btn">
+              <li>Categories</li>
+            </a>  
+          
+            <a href="/blog/about/" class="Btn">
+              <li>About</li>
+            </a>  
+          
+        </ul>
+    </section>
+    <section class="media">
+        
+    </section>
+</aside>
+
+    <div class="container">
+        <div data-pager-shell>
+            <div>
+  <article class='ContentView'>
+    <header class='PageTitle'>
+        <h1>Hadoop之MapReduce介绍</h1>
+    </header>
+
+    <section>
+      <p>MapReduce计算模型将大数据任务分解为多个可在集群中并行执行的单个任务，通过合并单个任务的结果来得到最终的结果：</p>
+<ul>
+<li>Map：将输入计算为键值对的形式输出</li>
+<li>Reduce：将相同的键发送到同一个Reduce任务上，计算这些键对应的值，最终输出一个键值对。</li>
+</ul>
+<a id="more"></a>
+
+<h3 id="MapReduce架构"><a href="#MapReduce架构" class="headerlink" title="MapReduce架构"></a>MapReduce架构</h3><p>MapReduce体系结构主要由四个部分组成：Client，JobTracker(集群中只有一个)，TaskTracker，Task。</p>
+<ol>
+<li>Client：用户编写的MapReduce程序通过Client提交给JobTracker；用户通过Client提供的接口查询作业运行状态</li>
+<li>JobTracker：负责资源监控和任务调度；监控所有的JobTracker和任务的健康状态，出现异常则将任务转移到其他节点；资源管理；</li>
+<li>TaskTracker：周期性的将本节点上资源的使用情况和任务运行进度上报给JobTracker；处理JobTracker指令，如停止任务等</li>
+<li>Task：分为Map Task和Reduce  Task，由TaskTracker启动</li>
+</ol>
+<h3 id="MapReduce执行过程"><a href="#MapReduce执行过程" class="headerlink" title="MapReduce执行过程"></a>MapReduce执行过程</h3><p>MapReduce执行时分为Mapper和Reducer两个阶段，Mapper阶段读取Hdfs中的数据文件，调用方法处理数据；Reducer阶段接收Mapper阶段输出的数据，调用方法进行计算，最后输出到Hdfs文件中。</p>
+<h4 id="Mapper任务"><a href="#Mapper任务" class="headerlink" title="Mapper任务"></a>Mapper任务</h4><ol>
+<li>把输入文件进行分片生成InputSplit，每个InputSplit大小固定。默认情况下InputSplit大小与block大小一致，每个InputSplit由一个Mapper进程处理。若block大小为64mb，输入两个文件大小分别为32mb，72mb，则对应输入三个block，每个block产生一个InputSplit，由三个Mapper进程处理。</li>
+<li>对InputSplit中的数据按照一定的规则解析成键值对。如将每一行文本内容解析成键值对，键是每一行的起始位置，值是本行的文本内容。</li>
+<li>调用Mapper类中的map方法。步骤2中解析出来的每一个键值对，调用一次map方法，输出零个或多个键值对。</li>
+<li>按照规则对步骤3输出的键值对进行分区，分区基于键进行。默认只有一个分区，每个Reducer任务负责一个分区，即默认只有一个Reducer任务。</li>
+<li>在每个分区中根据键值对进行排序，先按照键进行排序，键相同则按照值进行排序</li>
+</ol>
+<h4 id="Reduce任务"><a href="#Reduce任务" class="headerlink" title="Reduce任务"></a>Reduce任务</h4><ol>
+<li>Reducer任务会主动从所有Mapper任务复制其输出的键值对</li>
+<li>把复制到Reducer的本地数据，全部进行合并，即将分散的数据合并成一个大的数据集，然后再进行排序</li>
+<li>对排序后的键值对调用reduce方法，键相同的键值对调用一次reduce方法，每次调用会产生零个或者多个键值对，最后将这些输出的键值对写入到Hdfs文件中。</li>
+</ol>
+<h4 id="Mapper数量"><a href="#Mapper数量" class="headerlink" title="Mapper数量"></a>Mapper数量</h4><p>由上可知，Mapper的数量由InputSplit数量决定，而InputSplit数量由输入的文件数量确定。Split是在block基础上进行逻辑切分，block时物理切分。</p>
+<h3 id="MapReduce核心过程Shuffle"><a href="#MapReduce核心过程Shuffle" class="headerlink" title="MapReduce核心过程Shuffle"></a>MapReduce核心过程Shuffle</h3><p>Shuffle主要负责从map结束到reduce开始之间的过程。</p>
+<h4 id="Map端shuffle"><a href="#Map端shuffle" class="headerlink" title="Map端shuffle"></a>Map端shuffle</h4><p>每个Mapper进程都有一个环形的内存缓冲区，用来存储map的输出数据，默认大小为100mb，当缓冲区占用达到0.8即80mb时，一个后台进程就会把数据溢写到磁盘中：首先按分区和键进行排序，排序结果为缓冲区内分区有序，同一个分区中的键有序。排序完成后会创建一个临时文件，然后启动一个线程将这部分数据spill到磁盘上。剩余的20%内存在此期间可以继续写入map输出的键值对。当一个map处理的数据很大超过缓冲区内存时，就会生成多个spill文件，会启动进程对同一个map任务产生的多个spill文件进行归并（merge）生成一个已经分区且排序的大文件。溢出写文件归并完成后，map将删除所有的临时溢出写文件，通知NodeManager任务完成，只要其中一个map task完成，reduce task就开始复制它的输出（按照分区号，每个Reducer读其对应的分区数据）</p>
+<h4 id="Reduce端shuffle"><a href="#Reduce端shuffle" class="headerlink" title="Reduce端shuffle"></a>Reduce端shuffle</h4><ol>
+<li><p>copy拉去数据<br>reduce进程启动copy线程，通过http方式请求map task所在的NodeManager来获取输出文件。NM需要为分区文件运行reduce任务，reduce读取可能对应多个map task，而每个map task执行进度不一致，因此当一个map task完成时，reduce任务便开始复制其输出。</p>
+</li>
+<li><p>merge合并小文件<br>Copy过来的数据会先放入内存缓冲区，Reducer会向每个map拉取数据，在内存中每个map对应一块数据，当内存缓冲区存储的map数据到达阈值时，开始把内存中的数据merge输出到磁盘文件中，即内存到磁盘merge。当该Reducer的map数据全部copy完成，reducer上会生成多个文件（若拉取的数据总量未超出内存大小，则无文件生成），执行磁盘合并操作，map输出的数据是有序的，merge进行一次合并排序（针对键进行归并排序，即reducer端的sort过程），最终reduce shuffle过程会输出一个整体有序的数据块。</p>
+</li>
+<li><p>reduce计算当Reduce任务完成全部的复制和排序后，会根据已排好序的key构造对应值的迭代器，默认根据键分组也可以自定义。对于默认分组，键相同则属于同一种，对应的value放入同一个迭代器，该迭代器的key与放入迭代器数据的key一致。</p>
+<p>在reduce阶段，reduce方法的输入是所有的key和value迭代器，输出直接写到Hdfs。</p>
+</li>
+</ol>
+<h3 id="Map-Join与Reduce-Join"><a href="#Map-Join与Reduce-Join" class="headerlink" title="Map Join与Reduce Join"></a>Map Join与Reduce Join</h3><p>map join是直接在map阶段完成数据的合并，没有reduce阶段；</p>
+<p>reduce join是在map阶段完成数据的标记，在reduce阶段完成数据的合并。</p>
+
+
+      
+
+    </section>
+    
+      <section class='ArticleMeta'>
+          <div>
+            发布于&nbsp;
+            <time datetime="2021-11-30T08:26:19.000Z" itemprop="datePublished">
+              2021-11-30
+            </time>
+          </div>
+          
+      </section>
+    
+    
+</article>
+
+  
+</div>
+
+            <footer>
+    <div>© 2021 - Levi </div>
+    <div>
+        <span>
+<!--            Powered by <a target="_blank" rel="noopener" href="https://hexo.io">Hexo</a>-->
+            Homo sum, humani nihil a me alienum puto
+        </span>
+    </div>
+<!--    {% if theme.footer.counter %}-->
+    <script async src="//busuanzi.ibruce.info/busuanzi/2.3/busuanzi.pure.mini.js"></script>
+    <span id="busuanzi_container_site_pv">Views <span id="busuanzi_value_site_pv"></span> </span>
+    <span class="post-meta-divider">|</span>
+    <span id="busuanzi_container_site_uv">Visitors <span id="busuanzi_value_site_uv"></span> </span>
+<!--    {% endif %}-->
+</footer>
+
+        </div>
+    </div>
+</div>
+
+<script src="/blog/js/pager/dist/singlepager.js"></script>
+
+<script>
+var sp = new Pager('data-pager-shell')
+
+</script>
+</body>
+</html>
