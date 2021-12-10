@@ -59,10 +59,9 @@
     </header>
 
     <section>
-      <p>Spark Repartition介绍</p>
+      <p>在分布式环境中，数据合理分布是提高性能的关键因素。在SparkSQL的DataFrame API中有一个*repartition()*函数用于控制数据在Spark集群上分布。然而高效地使用这个函数并不容易因为改变数据分布就意味着集群节点间物理数据移动（即Shuffle）的损耗。</p>
 <a id="more"></a>
 
-<p>在分布式环境中，数据合理分布是提高性能的关键因素。在SparkSQL的DataFrame API中有一个*repartition()*函数用于控制数据在Spark集群上分布。然而高效地使用这个函数并不容易因为改变数据分布就意味着集群节点间物理数据移动（即Shuffle）的损耗。</p>
 <p>根据经验来看，使用repartition消耗较大因为该操作会导致shuffle。这篇文章中我们将更加深入的探讨在某些情景下，在合适的位置增加一个shuffle并移除其他两个shuffle会使整体执行更加高效。我们先来了解一些概念来理解关于数据分布的信息在Spark SQL中是如何内部利用的，然后再介绍一些使用repartition的实际示例。</p>
 <p>本篇文章中提到的概念基于Spark源代码，版本为snapshot3.1，大多数概念也适用于先前的版本2.x。并且这些理论和内部行为对语言是透明的，跟我们用Scala，Java或者是Python API使用无关。</p>
 <h3 id="查询计划Query-Plan"><a href="#查询计划Query-Plan" class="headerlink" title="查询计划Query Plan"></a>查询计划Query Plan</h3><p>Spark SQL的DataFrame API允许用户实现高级transfomations，这些transformations是惰性的，这意味着它们不会立即执行而是在引擎上被转换成一个查询计划。当用户调用一个需要输出结果的action时，查询计划才会被具体化，比如我们正在把transformation的结果保存到一些存储系统中。查询计划本身可以被分为两种类型：一个逻辑计划和一个物理计划。查询计划执行的过程取决于逻辑计划与物理计划。</p>

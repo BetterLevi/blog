@@ -92,7 +92,7 @@
     </header>
     <div>
       
-        <p>ES近实时搜索与Translog介绍</p>
+        <p>Elasticsearch基于Lucene，Lucene搜索是按segment进行的，每一个segment本身就是一个倒排索引，一个Lucene倒排索引包含segment集合和一个提交点（是一个列出了所有已知segment的文件）。新的文档首先被添加到内存的lucene索引缓存中，然后写入到一个基于磁盘的segment，在一次提交后，一个新的segment被添加到提交点并且清空缓存。</p>
         
           <div class="more-link">
             <a href="/blog/2021/07/26/Elasticsearch%E8%BF%91%E5%AE%9E%E6%97%B6%E6%90%9C%E7%B4%A2%E4%B8%8ETranslog/#more">Read On »</a>
@@ -137,7 +137,7 @@
     </header>
     <div>
       
-        <p>ES主节点的选举策略</p>
+        <p>选举主节点和改变集群状态是两个最根本的任务因为所有正常的主节点必须一起正常工作。即使在某些节点挂了时维持这些工作的稳定是非常重要的。ES通过考虑每个动作都收到仲裁节点成功的响应来实现健壮性，仲裁节点是集群中可用主节点的子集。使用一个子集响应的优点是，即使某些节点挂了也不会阻止集群继续执行任务。仲裁节点需要谨慎选取以防集群<em>脑裂</em>，就是说集群被分成了两部分并且每一部分可能做出一些与另一部分不一致的决定。</p>
         
           <div class="more-link">
             <a href="/blog/2021/07/23/Elasticsearch%E5%9F%BA%E4%BA%8E%E4%BB%B2%E8%A3%81%E7%9A%84%E9%80%89%E4%B8%BE%E7%AD%96%E7%95%A5/#more">Read On »</a>
@@ -182,7 +182,7 @@
     </header>
     <div>
       
-        <p>ES集群节点发现过程介绍</p>
+        <p>节点发现是ES集群formation模块找到其他节点形成集群的过程。当你启动一个ES节点或者一个节点认为主节点挂了并开始选择新的主节点时运行节点发现任务。</p>
         
           <div class="more-link">
             <a href="/blog/2021/07/22/ES%E9%9B%86%E7%BE%A4%E8%8A%82%E7%82%B9%E5%8F%91%E7%8E%B0/#more">Read On »</a>

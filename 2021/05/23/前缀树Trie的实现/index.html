@@ -59,11 +59,10 @@
     </header>
 
     <section>
-      <p>前缀树介绍与实现</p>
+      <h3 id="前缀树"><a href="#前缀树" class="headerlink" title="前缀树"></a>前缀树</h3><p>Trie树，也叫做字典树，是一种有序树，用于保存一种映射关系，其中映射的键通常为字符串，且键并不直接保存在节点中，而是由节点在树中的位置决定。一个节点所有的子孙都具有相同的前缀，也就是该节点所对应的字符串，而跟节点对应空字符串。一般情况下，不是所有的节点都有对应的值，而是只有叶子节点和部分内部节点所对应的键才有相关的值。</p>
+<p><em>应用 ： Trie树常用于搜索提示。比如当输入一个网址，可以自动搜索出其他可能的选择，当没有完全匹配的搜索结果时，可以返回前缀最相似的可能值。</em></p>
 <a id="more"></a>
 
-<h3 id="前缀树"><a href="#前缀树" class="headerlink" title="前缀树"></a>前缀树</h3><p>Trie树，也叫做字典树，是一种有序树，用于保存一种映射关系，其中映射的键通常为字符串，且键并不直接保存在节点中，而是由节点在树中的位置决定。一个节点所有的子孙都具有相同的前缀，也就是该节点所对应的字符串，而跟节点对应空字符串。一般情况下，不是所有的节点都有对应的值，而是只有叶子节点和部分内部节点所对应的键才有相关的值。</p>
-<p><em>应用 ： Trie树常用于搜索提示。比如当输入一个网址，可以自动搜索出其他可能的选择，当没有完全匹配的搜索结果时，可以返回前缀最相似的可能值。</em></p>
 <h3 id="结构分析"><a href="#结构分析" class="headerlink" title="结构分析"></a>结构分析</h3><ul>
 <li><p>Trie的节点结构：</p>
 <figure class="highlight java"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br></pre></td><td class="code"><pre><code class="hljs java"><span class="hljs-class"><span class="hljs-keyword">class</span> <span class="hljs-title">TrieNode</span> </span>&#123;<br>  <span class="hljs-comment">//用来标示该节点是否为一个串的结束节点</span><br>  <span class="hljs-keyword">private</span> <span class="hljs-keyword">boolean</span> isEnd;<br>  <span class="hljs-comment">//字母映射表（26个位置对应26个字母）</span><br>  <span class="hljs-keyword">private</span> TrieNode[] next;<br>&#125;<br></code></pre></td></tr></table></figure></li>
