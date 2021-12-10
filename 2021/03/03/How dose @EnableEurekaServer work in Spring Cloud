@@ -59,7 +59,8 @@
     </header>
 
     <section>
-      <a id="more"></a>
+      <p>Eureka使用注解启动的原理分析</p>
+<a id="more"></a>
 
 <h3 id="How-dose-EnableEurekaServer-work-in-Spring-Cloud"><a href="#How-dose-EnableEurekaServer-work-in-Spring-Cloud" class="headerlink" title="How dose @EnableEurekaServer work in Spring Cloud?"></a>How dose @EnableEurekaServer work in Spring Cloud?</h3><p>We often use an annotation called @EnableEurekaServer to start the Eureka Server in Spring Cloud, but how dose it work? I will explain the process by reading the source code in this blog.</p>
 <h4 id="1-Auto-initialization-and-configuration"><a href="#1-Auto-initialization-and-configuration" class="headerlink" title="1. Auto initialization and configuration"></a>1. Auto initialization and configuration</h4><p><strong>@EnableEurekaServer</strong></p>

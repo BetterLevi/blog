@@ -92,48 +92,12 @@
     </header>
     <div>
       
-        <a id="more"></a>
-
-<p>MapReduce计算模型将大数据任务分解为多个可在集群中并行执行的单个任务，通过合并单个任务的结果来得到最终的结果：</p>
-<ul>
-<li>Map：将输入计算为键值对的形式输出</li>
-<li>Reduce：将相同的键发送到同一个Reduce任务上，计算这些键对应的值，最终输出一个键值对。</li>
-</ul>
-<h3 id="MapReduce架构"><a href="#MapReduce架构" class="headerlink" title="MapReduce架构"></a>MapReduce架构</h3><p>MapReduce体系结构主要由四个部分组成：Client，JobTracker(集群中只有一个)，TaskTracker，Task。</p>
-<ol>
-<li>Client：用户编写的MapReduce程序通过Client提交给JobTracker；用户通过Client提供的接口查询作业运行状态</li>
-<li>JobTracker：负责资源监控和任务调度；监控所有的JobTracker和任务的健康状态，出现异常则将任务转移到其他节点；资源管理；</li>
-<li>TaskTracker：周期性的将本节点上资源的使用情况和任务运行进度上报给JobTracker；处理JobTracker指令，如停止任务等</li>
-<li>Task：分为Map Task和Reduce  Task，由TaskTracker启动</li>
-</ol>
-<h3 id="MapReduce执行过程"><a href="#MapReduce执行过程" class="headerlink" title="MapReduce执行过程"></a>MapReduce执行过程</h3><p>MapReduce执行时分为Mapper和Reducer两个阶段，Mapper阶段读取Hdfs中的数据文件，调用方法处理数据；Reducer阶段接收Mapper阶段输出的数据，调用方法进行计算，最后输出到Hdfs文件中。</p>
-<h4 id="Mapper任务"><a href="#Mapper任务" class="headerlink" title="Mapper任务"></a>Mapper任务</h4><ol>
-<li>把输入文件进行分片生成InputSplit，每个InputSplit大小固定。默认情况下InputSplit大小与block大小一致，每个InputSplit由一个Mapper进程处理。若block大小为64mb，输入两个文件大小分别为32mb，72mb，则对应输入三个block，每个block产生一个InputSplit，由三个Mapper进程处理。</li>
-<li>对InputSplit中的数据按照一定的规则解析成键值对。如将每一行文本内容解析成键值对，键是每一行的起始位置，值是本行的文本内容。</li>
-<li>调用Mapper类中的map方法。步骤2中解析出来的每一个键值对，调用一次map方法，输出零个或多个键值对。</li>
-<li>按照规则对步骤3输出的键值对进行分区，分区基于键进行。默认只有一个分区，每个Reducer任务负责一个分区，即默认只有一个Reducer任务。</li>
-<li>在每个分区中根据键值对进行排序，先按照键进行排序，键相同则按照值进行排序</li>
-</ol>
-<h4 id="Reduce任务"><a href="#Reduce任务" class="headerlink" title="Reduce任务"></a>Reduce任务</h4><ol>
-<li>Reducer任务会主动从所有Mapper任务复制其输出的键值对</li>
-<li>把复制到Reducer的本地数据，全部进行合并，即将分散的数据合并成一个大的数据集，然后再进行排序</li>
-<li>对排序后的键值对调用reduce方法，键相同的键值对调用一次reduce方法，每次调用会产生零个或者多个键值对，最后将这些输出的键值对写入到Hdfs文件中。</li>
-</ol>
-<h4 id="Mapper数量"><a href="#Mapper数量" class="headerlink" title="Mapper数量"></a>Mapper数量</h4><p>由上可知，Mapper的数量由InputSplit数量决定，而InputSplit数量由输入的文件数量确定。Split是在block基础上进行逻辑切分，block时物理切分。</p>
-<h3 id="MapReduce核心过程Shuffle"><a href="#MapReduce核心过程Shuffle" class="headerlink" title="MapReduce核心过程Shuffle"></a>MapReduce核心过程Shuffle</h3><p>Shuffle主要负责从map结束到reduce开始之间的过程。</p>
-<h4 id="Map端shuffle"><a href="#Map端shuffle" class="headerlink" title="Map端shuffle"></a>Map端shuffle</h4><p>每个Mapper进程都有一个环形的内存缓冲区，用来存储map的输出数据，默认大小为100mb，当缓冲区占用达到0.8即80mb时，一个后台进程就会把数据溢写到磁盘中：首先按分区和键进行排序，排序结果为缓冲区内分区有序，同一个分区中的键有序。排序完成后会创建一个临时文件，然后启动一个线程将这部分数据spill到磁盘上。剩余的20%内存在此期间可以继续写入map输出的键值对。当一个map处理的数据很大超过缓冲区内存时，就会生成多个spill文件，会启动进程对同一个map任务产生的多个spill文件进行归并（merge）生成一个已经分区且排序的大文件。溢出写文件归并完成后，map将删除所有的临时溢出写文件，通知NodeManager任务完成，只要其中一个map task完成，reduce task就开始复制它的输出（按照分区号，每个Reducer读其对应的分区数据）</p>
-<h4 id="Reduce端shuffle"><a href="#Reduce端shuffle" class="headerlink" title="Reduce端shuffle"></a>Reduce端shuffle</h4><ol>
-<li><p>copy拉去数据<br>reduce进程启动copy线程，通过http方式请求map task所在的NodeManager来获取输出文件。NM需要为分区文件运行reduce任务，reduce读取可能对应多个map task，而每个map task执行进度不一致，因此当一个map task完成时，reduce任务便开始复制其输出。</p>
-</li>
-<li><p>merge合并小文件<br>Copy过来的数据会先放入内存缓冲区，Reducer会向每个map拉取数据，在内存中每个map对应一块数据，当内存缓冲区存储的map数据到达阈值时，开始把内存中的数据merge输出到磁盘文件中，即内存到磁盘merge。当该Reducer的map数据全部copy完成，reducer上会生成多个文件（若拉取的数据总量未超出内存大小，则无文件生成），执行磁盘合并操作，map输出的数据是有序的，merge进行一次合并排序（针对键进行归并排序，即reducer端的sort过程），最终reduce shuffle过程会输出一个整体有序的数据块。</p>
-</li>
-<li><p>reduce计算当Reduce任务完成全部的复制和排序后，会根据已排好序的key构造对应值的迭代器，默认根据键分组也可以自定义。对于默认分组，键相同则属于同一种，对应的value放入同一个迭代器，该迭代器的key与放入迭代器数据的key一致。</p>
-<p>在reduce阶段，reduce方法的输入是所有的key和value迭代器，输出直接写到Hdfs。</p>
-</li>
-</ol>
-<h3 id="Map-Join与Reduce-Join"><a href="#Map-Join与Reduce-Join" class="headerlink" title="Map Join与Reduce Join"></a>Map Join与Reduce Join</h3><p>map join是直接在map阶段完成数据的合并，没有reduce阶段；</p>
-<p>reduce join是在map阶段完成数据的标记，在reduce阶段完成数据的合并。</p>
-
+        <p>MapReduce介绍</p>
+        
+          <div class="more-link">
+            <a href="/blog/2021/11/30/Hadoop%E4%B9%8BMapReduce%E4%BB%8B%E7%BB%8D/#more">Read On »</a>
+          </div>
+        
       
     </div>
 </article>
@@ -173,68 +137,12 @@
     </header>
     <div>
       
-        <a id="more"></a>
-
-<h3 id="Hdfs中数据块block的设计"><a href="#Hdfs中数据块block的设计" class="headerlink" title="Hdfs中数据块block的设计"></a>Hdfs中数据块block的设计</h3><h4 id="block大小设置"><a href="#block大小设置" class="headerlink" title="block大小设置"></a>block大小设置</h4><p> Hdfs中的文件在物理上以块block的形式存储，块的大小可以通过参数进行配置(dfs.blocksize)，hadoop2.x版本中默认块大小为128M，之前版本为64M。</p>
-<p>block大小设置的原则是最小化寻址开销，减少网络传输。</p>
-<ul>
-<li>设置合适的block大小有助于减少磁盘寻址时间，提高系统吞吐量；</li>
-<li>NameNode需要在内存FSImage文件中记录DataNode中数据块信息，如果block size太小，需要维护的数据块信息增多，内存消耗增加；</li>
-<li>若Map任务奔溃，重新启动加载数据是，block越大，数据加载时间越长，恢复任务慢；</li>
-<li>主节点监控其他节点，每个节点会周期性的报告自己的工作状态，若节点超过时间阈值未报告则主节点视该节点下线，并将该节点的数据分发给其他节点。而时间阈值根据block size进行估算，若size设置不合理，容易误判节点死亡；</li>
-<li>MapReduce中map任务通常一次只处理一个block中的数据，若block设置过大会导致任务数量太少导致运行速度过慢；</li>
-<li>读写需要数据的网络传输，block过大网络传输时间过长导致程序超时无响应，任务执行过程中拉取其他节点的block或失败重试的成本太高；block过小则会频繁的进行文件传输，增加对网络和CPU的占用；</li>
-</ul>
-<h3 id="Hdfs架构"><a href="#Hdfs架构" class="headerlink" title="Hdfs架构"></a>Hdfs架构</h3><h4 id="NameNode"><a href="#NameNode" class="headerlink" title="NameNode"></a>NameNode</h4><ul>
-<li>负责文件元数据信息的操作以及处理客户端的请求；</li>
-<li>管理Hdfs文件系统的命名空间NameSpace；</li>
-<li>维护文件系统树FileSystem以及文件树中所有的文件和文件夹的元数据Metadata，维护文件到块的对应关系和block到节点的对应关系；</li>
-<li>维护镜像文件fsimage和操作文件editlog，一般缓存在内存中也可持久化到磁盘；</li>
-<li>记录文件中各个block所在的DataNode的位置信息，这些信息不会永久保存，在NameNode启动时，DataNode在向NameNode进行注册时进行缓存；</li>
-</ul>
-<h4 id="DataNode"><a href="#DataNode" class="headerlink" title="DataNode"></a>DataNode</h4><ul>
-<li>负责管理其节点上存储数据的读写，定期向NameNode发送心跳和文件块状态报告等 </li>
-</ul>
-<h4 id="Secondary-NameNode"><a href="#Secondary-NameNode" class="headerlink" title="Secondary NameNode"></a>Secondary NameNode</h4><p>NameNode启动时会生成整个文件系统的快照fsimage，启动后文件的改动信息记录在editlog(写过程由DataNode触发，当DataNode写文件操作后，与NameNode进行通信，告诉NameNode改文件的block信息，NameNode将这些信息保存在editlog中)，当NameNode重启时，editlog合并到fsimage中生成最新的系统快照。<br>          这种运行逻辑存在问题：</p>
-<ol>
-<li>NameNode长时间不重启，editlog会变得很大；</li>
-<li>NameNode的重启会因为太大的editlog要合并到fsimage中而变得很慢；</li>
-<li>NameNode挂掉，editlog丢失，而fsimage的版本太旧导致中间数据丢失。</li>
-</ol>
-<p>于是增加Secondary NameNode来解决上述问题，其职责为定时查询NameNode上的editlog并将其合并到自己的fsimage中，合并完成后将新的fsimage拷贝到NameNode上进行替换。</p>
-<h3 id="HA设计"><a href="#HA设计" class="headerlink" title="HA设计"></a>HA设计</h3><p> Hadoop1.x 中只有一个NameNode，存在单点问题，即NameNode挂了后集群不可用。2.x中提供两种方式实现高可用：NFS(Network File System) 和 JN(JournalNode，Quorum Journal Manager)。</p>
-<h4 id="实现思路"><a href="#实现思路" class="headerlink" title="实现思路"></a>实现思路</h4><p>集群中有两个NameNode，一个为Active NameNode，另一个为Standby NameNode，这两个NameNode状态可以切换，但是只能存在一个Active NameNode，且只有Active NameNode对外提供服务而Standby NameNode不提供服务。两种NameNode之间通过NFS或JN进行editlog同步。</p>
-<p>Active NameNode更新editlog后将其上传NFS或者JN，Standby NameNode定时从NFS或JN上读取editlog，然后合并至fsimage上生成最新的fsimage，合并完成后通知Active NameNode获取新的fsimage进行替换。<br> 所以Active NameNode和Standby NameNode上的fsimage都是最新的，当Active NameNode挂了，可以直接将Standby NameNode切换为Active NameNode。</p>
-<ul>
-<li>NFS：一个共享的文件存储系统，Active NameNode写文件， Standby NameNode读文件，一旦不可用则数据无法继续同步。</li>
-<li>JN(Quorum Journal Manager): JournalNode集群，由2N+1个节点组成，最多可容忍N个节点挂掉，保证editlog日志文件共享存储系统的可用性。</li>
-</ul>
-<h4 id="架构图"><a href="#架构图" class="headerlink" title="架构图"></a>架构图</h4><p><img src="/blog/images/Hdfs-arch1.png" alt="Hdfs架构组成"></p>
-<p>由上图可以看出，NameNode的主备监控由ZKFC(ZKFailoverController)完成，ZKFC时独立运行的进程，每个ZKFC监控一个NameNode，当监控主节点的ZKFC发现主节点异常时，该ZKFC端开与ZooKeeper的连接，释放分布式锁，监控备用NameNode的ZKFC抢到锁并将其监控的Standby NameNode切换成Active NameNode。</p>
-<p>ZooKeeper为ZKFC实现故障转移提供统一协调服务。通过ZooKeeper中watcher的监听机制，通知ZKFC异常NameNode下线并保证同一时刻只有一个Active NameNode。</p>
-<h4 id="主备切换流程"><a href="#主备切换流程" class="headerlink" title="主备切换流程"></a>主备切换流程</h4><p>Hdfs集群刚启动时，NameNode节点状态都是Standby，之后每个NameNode节点都会启动ZKFC进程后去ZooKeeper集群抢占分布式锁，成功抢占分布式锁的NameNode会成为Active NameNode，之后ZKFC实时监控自己的NameNode。<br> Hdfs提供两种HA状态方式：<br> 一种是管理员运行命令 “DFSHAAdmin -failover”执行状态切换；另一种是自动切换。</p>
-<ul>
-<li><p>Active NameNode挂掉后，Standby NameNode如何升级？<br> Active NameNode挂掉后，对应的ZKFC进程检测到NameNode状态，向ZooKeeper发生删除锁的命令，锁删除后，触发一个事件回调Standby NameNode上的ZKFC。ZKFC收到消息后先去ZooKeeper抢锁，锁创建完成后会检查原来的主NameNode是否真的挂掉（排除其网络延迟等），确认挂掉则升级当前节点为Active NameNode；若没挂掉则先将原来的主节点降级为备节点，将当前节点升级为Active NameNode。</p>
-</li>
-<li><p>Active NameNode上的ZKFC进行挂掉而Active NameNode正常，如何切换？</p>
-<p>ZKFC挂掉后，ZKFC与ZooKeeper之间的TCP连接断开，session消失锁被释放，触发事件回调Standby NameNode上的ZKFC进程，ZKFC去抢占锁，抢锁成功后与上述执行过程一致。</p>
-</li>
-</ul>
-<h3 id="Hdfs读数据流程"><a href="#Hdfs读数据流程" class="headerlink" title="Hdfs读数据流程"></a>Hdfs读数据流程</h3><p><img src="/blog/images/Hdfs-read.png" alt="Hdfs读流程"></p>
-<ol>
-<li>打开文件：客户端调用*DistribuedFileSystem.open()<em>方法打开文件，该方法中调用</em>DFSclient.open()*方法得到DFSInputStream对象用于读取数据块</li>
-<li>构造DFSInputStream：*DFScliernt.open()<em>构造DFSInputStream输出流时，调用</em>getBlockLocations()*方法向NameNode节点获取组成文件的block位置信息，且block的位置信息按与客户端距离的远近排序</li>
-<li>连接DataNode读取数据块：客户端通过调用*DFSInputStream.read()<em>方法，连接到离客户端最近的一个DataNode读取block，数据会以数据包packet（注：client向DataNode或DataNode pipline之间传输数据的基本单位，默认64kb）为单位从DataNode通过流式接口传给客户端直到一个数据块读取完成；DFSInputStream会再次调用</em>getBlockLocations()*方法，获取下一个最优节点上数据块的位置</li>
-<li>文件的所有block读取完成，调用close()方法，关闭输入流，释放资源</li>
-</ol>
-<h3 id="Hdfs写数据流程"><a href="#Hdfs写数据流程" class="headerlink" title="Hdfs写数据流程"></a>Hdfs写数据流程</h3><p><img src="/blog/images/Hdfs-write.png" alt="Hdfs写流程"></p>
-<ol>
-<li>在NameNode创建文件：当client写新文件时，调用*DistributedFileSystem.create()*方法，该方法中会生成一个DFSOutputStream对象，生成该对象时，会检查客户端是否已经打开；通过RPC与NameNode通信并创建新文件，构建出DFSOutputStream，该对象负责数据的写入</li>
-<li>建立数据流pipeline管道：客户端得到一个输出流对象，通过调用*ClientProtocol.addBlock()*向NameNode申请新的空block，addBlock()会返回一个LocateBlock对象，该对象保存可写入的DataNode信息，然后构成pipeline</li>
-<li>通过数据流pipeline写数据：当DFSOutputStream调用wirte()方法写入数据时，数据会先被缓存在一个缓冲区中，写入的数据会被切分为多个数据包，每达到一个数据包长度(65536Byte)时，DFSOutputStream会构造一个Packet对象保存当前要发送的数据包；新构造的packet对象则被放到DFSOutputStream维护的dataQueue队列中，DataStream线程会从dataQueue队列中取出packet对象，通过底层IO发送到pipeline中的第一个DataNode，然后第一个DataNode发送至第二个DataNode，以此类推。发送完成后该packet被移出dataQueue，并放入DFSOutputStream维护的确认队列ackQueue中，当收到所有DataNode的确认消息后，移出确认队列。(注：Chunk是Client向DataNode或者DataNode pipeline之间进行数据校验的基本单位，默认为512Byte，带有4Byte的校验位，因此实际上每个Chunk写入packet的大小为516Byte)</li>
-<li>关闭输入流并提交文件：客户端完成整个文件中所有数据块block的写操作后，调用close()方法关闭输出流，然后调用*ClientProtoclo.complete()*方法通知NameNode提交该文件的所有block，NameNode确认该文件的备份数是否满足要求。</li>
-</ol>
-
+        <p>Hdfs介绍</p>
+        
+          <div class="more-link">
+            <a href="/blog/2021/11/11/Hadoop%E4%B9%8BHdfs/#more">Read On »</a>
+          </div>
+        
       
     </div>
 </article>
@@ -278,30 +186,12 @@
     </header>
     <div>
       
-        <a id="more"></a>
-
-<p>在分布式环境中，数据合理分布是提高性能的关键因素。在SparkSQL的DataFrame API中有一个*repartition()*函数用于控制数据在Spark集群上分布。然而高效地使用这个函数并不容易因为改变数据分布就意味着集群节点间物理数据移动（即Shuffle）的损耗。</p>
-<p>根据经验来看，使用repartition消耗较大因为该操作会导致shuffle。这篇文章中我们将更加深入的探讨在某些情景下，在合适的位置增加一个shuffle并移除其他两个shuffle会使整体执行更加高效。我们先来了解一些概念来理解关于数据分布的信息在Spark SQL中是如何内部利用的，然后再介绍一些使用repartition的实际示例。</p>
-<p>本篇文章中提到的概念基于Spark源代码，版本为snapshot3.1，大多数概念也适用于先前的版本2.x。并且这些理论和内部行为对语言是透明的，跟我们用Scala，Java或者是Python API使用无关。</p>
-<h3 id="查询计划Query-Plan"><a href="#查询计划Query-Plan" class="headerlink" title="查询计划Query Plan"></a>查询计划Query Plan</h3><p>Spark SQL的DataFrame API允许用户实现高级transfomations，这些transformations是惰性的，这意味着它们不会立即执行而是在引擎上被转换成一个查询计划。当用户调用一个需要输出结果的action时，查询计划才会被具体化，比如我们正在把transformation的结果保存到一些存储系统中。查询计划本身可以被分为两种类型：一个逻辑计划和一个物理计划。查询计划执行的过程取决于逻辑计划与物理计划。</p>
-<h3 id="逻辑计划Logical-Plan"><a href="#逻辑计划Logical-Plan" class="headerlink" title="逻辑计划Logical Plan"></a>逻辑计划Logical Plan</h3><p>逻辑计划这个词代表着一个逻辑计划执行的多个步骤，逻辑计划本身就是一个查询的抽象表示，它是一个树形结构，树中的每个节点表示一个相关的操作。逻辑计划本身不会包括任何有关执行的具体信息或者用来计算转换Transformation的算法如聚合aggregation。它仅用一种方便优化的方式来表示查询的信息。</p>
-<p>在逻辑计划期间，查询计划会被Spark优化器进行优化，优化器会运用一系列用来转化计划的规则，这些规则大多数基于启发式，举个例子来说，在执行其他操作之前先对数据进行过滤是更好的（会减少内存占用）等等。</p>
-<h3 id="物理计划Physical-Plan"><a href="#物理计划Physical-Plan" class="headerlink" title="物理计划Physical Plan"></a>物理计划Physical Plan</h3><p>一旦逻辑计划被优化完成，物理计划就开始了。物理计划的作用是把逻辑计划转变为可以执行的物理执行计划。不想逻辑计划那样抽象，物理计划会表示很多有关执行的具体细节信息，因为它包括了执行期间需要用到的具体算法。</p>
-<p>物理计划也由两步组成因为物理计划有两个版本：spark plan和executed plan。Spark plan也称作策略，逻辑计划中的每个节点会在spark plan中转换成一个或者多个操作。一个策略的例子是JoinSelection，spark会决定使用哪种算法来join数据。spark plan可以通过api来查看，如Scala中：</p>
-<figure class="highlight scala"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><code class="hljs scala">df.queryExecution.sparkPlan<br></code></pre></td></tr></table></figure>
-<p>在spark plan创建之后，还有一组其他的规则需要应用以创建最终的物理计划的版本，即executed plan。Executed plan将会执行生成RDD代码，查看executed plan我们可以简单地在DataFrame上调用explain，因为它实际上就是物理计划的最终版本。另外我们也可以去Spark UI上查看图形表示。</p>
-<h3 id="EnsureRequirement（ER规则）"><a href="#EnsureRequirement（ER规则）" class="headerlink" title="EnsureRequirement（ER规则）"></a>EnsureRequirement（ER规则）</h3><p>将Spark plan转换成Executed plan的这组规则称作EnsureRequirement，这组规则需要确保数据被正确的分配，因为有些转换需要保证数据被正确分配如joins和aggregation。物理计划中的每个操作符都有两个重要的属性：outputPartitioning和outputOrdering，这两个属性携带着数据分布的信息，以及在给定时刻数据如何被分区和排序的。除了这些，每个操作还有两个其他属性：requiredChildDistribution和requiredChildOrdering，节点通过这两个属性对其子节点的outputPartitioning和outputOrdering值提出要求。某些操作不会有任何需求但是有些操作需要，比如SortMergeJoin，这个操作对于其子节点有很强的要求，它要求数据必须以joining key进行分区和排序，这样才能正确的merge。让我们来考虑一个join两个表的简单查询（这两个表都是基于文件的数据源，格式为parquet）：</p>
-<figure class="highlight scala"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><code class="hljs scala">spark.table(<span class="hljs-string">&quot;tableA&quot;</span>).join(spark.table(<span class="hljs-string">&quot;tableB&quot;</span>), <span class="hljs-string">&quot;id&quot;</span>).write...<br></code></pre></td></tr></table></figure>
-<p>这个查询的spark plan看起来像下面这样：</p>
-<p><img src="/blog/images/sparkplan1.png" alt="Spark Plan"></p>
-<p>从spark plan中可以看到SortMergeJoin的子节点（两个Project操作）没有outputPartitioning和outputOrdering并且这是数据还没有提前重新分区和表未被分桶的常见情况。当ER规则应用于这个spark plan时会发现SortMergeJoin的需求没有满足，所有它将在这个计划上进行全部交换Exchange和排序Sort来满足需求。交换操作负责对数据重新分区以满足requiredChildDistribution需求，排序操作负责对数据进行排序来满足requiredChildOrdering，所以最终的执行计划看上去像下图所示（这个也可以在Spark UI上查看，但是不会看到spark plan因为到这一步时它已经不存在了）</p>
-<p><img src="/blog/images/sparkplan2.png" alt="final Spark Plan"></p>
-<h3 id="分桶"><a href="#分桶" class="headerlink" title="分桶"></a>分桶</h3><p>如果两个表都根据joining key分桶了那么情况将有所不同。分桶是一种将数据存储在预shuffle和可能的预排序状态的技术，其中bucket的信息存储在megastore中。在上述例子中，如果每个桶中有一个确定的文件，FileScan操作会根据metastore中的信息获取outputPartitioning设置，outputOrdering也会被设置并且会被传递给下游Project。如果两个表根据joining key被分桶到相同数量的桶中，那么有关outputOrdering的需求就会被满足，ER规则将不会在spark plan上执行交换操作。join两侧的相同分区数在这里至关重要，如果这些数据不同，exchange操作会在每个与默认分区数不同的分支上执行一遍，默认<em>spark.sql.shuffle.partitions=200</em>。所以合适正确的分桶可以让join操作进行shuffle。</p>
-<p>需要理解的重要一点是，Spark需要了解分布才能使用它，所以即使你的数据使用分桶进行了预shuffle，除非你将数据作为表来读取以从megastore中获取信息，否则spark不会知道这些信息所以不会在FileScan上设置outputPartitioning。</p>
-<h3 id="Repartition"><a href="#Repartition" class="headerlink" title="Repartition"></a>Repartition</h3><p>正如文章开始提到的，repartition函数可以用来改变数据在spark集群上的分配。这个函数将数据应该被分布的列作为参数列（可选项是第一个参数可以指定要被分区的数量）。引擎上发生的事情是，它将一个RepartitionByExpression节点添加到逻辑计划中，然后使用策略将其转换为Spark plan中的exchange，并将outputPartitioning设置为HashPartitioning，hash键是用作参数的列名。</p>
-<p>repartition函数另一种使用是仅指定一个参数，就是要被重新分区的数量，这种方式数据将会随机分布。</p>
-<p><a target="_blank" rel="noopener" href="https://towardsdatascience.com/should-i-repartition-836f7842298c">原文实际示例</a></p>
-
+        <p>Spark Repartition介绍</p>
+        
+          <div class="more-link">
+            <a href="/blog/2021/09/08/Spark%E9%87%8D%E6%96%B0%E5%88%86%E5%8C%BARepartition/#more">Read On »</a>
+          </div>
+        
       
     </div>
 </article>
@@ -341,133 +231,12 @@
     </header>
     <div>
       
-        <a id="more"></a>
-
-<h3 id="Spark特点"><a href="#Spark特点" class="headerlink" title="Spark特点"></a>Spark特点</h3><ol>
-<li>快：与Hadoop的MapReduce相比，Spark基于内存的运算要快100倍以上，基于硬盘的运算也要快10倍以上，Spark实现了高效的DAG执行引擎，可以基于内存来高效处理数据流</li>
-<li>易用：Spark支持Java，Python，R，Scala的API，还支持超过80种高级算法，使用户可以快速构建不同的应用。也支持交互式的python和scala的shell，可以很方便的在shell中使用spark来验证解决问题的方法</li>
-<li>通用：spark提供了统一的解决方案。Spark可以用于批处理，交互式查询Spark SQL，实时流处理Spark Streaming，机器学习MLlib和图计算GraphX。</li>
-<li>兼容性：Spark可以很方便的与其他开源产品进行融合。Spark可以使用Hadoop 的YARN和Apache     Mesos作为它的资源管理和调度器，并且可以处理所有Hadoop支持的数据，包括HDFS，HBase和Cassandra等。Spark也可以不依赖于第三方的资源管理和调度器，它实现了Standalone作为其内置的资源管理和调度框架，降低了Spark的使用门槛。</li>
-</ol>
-<h3 id="RDD知识点"><a href="#RDD知识点" class="headerlink" title="RDD知识点"></a>RDD知识点</h3><ol>
-<li>RDD不实际存储真正要计算的数据，而是记录了数据的位置在哪里，数据的转换关系（调用了什么方法，传入了什么函数）</li>
-<li>RDD中的所有转换都是惰性求值/延迟执行的，也就是说不会直接计算，只有当发生一个要求返回结果给Driver的Action时，这些转换才会真正运行。</li>
-<li>使用惰性求值的原因是可以在Action时对RDD操作形成DAG有向无环图进行Stage的划分和并行优化，这种设计让Spark更加有效率地执行</li>
-<li>RDD的算子分为两类：Transformation（返回一个新的RDD，map，filter等）和Action操作（返回值不是RDD或无返回值，reduce，collect等）。</li>
-<li>实际开发中如果某一个RDD后续会被频繁的使用，可以将该RDD进行持久化/缓存</li>
-</ol>
-<h3 id="数据分类"><a href="#数据分类" class="headerlink" title="数据分类"></a>数据分类</h3><ol>
-<li>结构化数据：有固定的schema，如关系型数据库中的表</li>
-<li>半结构化数据：没有固定的schema，但是有结构，数据一般是自描述性的，如Json</li>
-<li>非结构化数据：没有固定的schema，也没有结构，如图片或音频之类的</li>
-<li>RDD可以处理上述三种数据，SparkSQL主要用于处理结构化数据</li>
-</ol>
-<h3 id="Shuffle知识点"><a href="#Shuffle知识点" class="headerlink" title="Shuffle知识点"></a>Shuffle知识点</h3><ol>
-<li><p>要实现Tungsten-Sort Shuffle机制需要满足一下条件：</p>
-<ul>
-<li>Shuffle依赖中不带聚合操作或者没有对输出进行排序的要求</li>
-<li>Shuffle的序列化器支持序列化值的重定位（当前仅支持Kryo Serializer Spark     SQL框架自定义的序列化器）</li>
-<li>  Shuffle过程中输出的分区个数少于16777216个</li>
-</ul>
-</li>
-<li><p>Spark Shuffle分为两种：基于Hash的Shuffle和基于Sort的Shuffle，</p>
-<ul>
-<li><p>Hash Shuffle特点：</p>
-<ul>
-<li>优点是可以省略不必要的排序开销，避免了排序所需的内存开销；</li>
-<li>缺点<ul>
-<li>生产的文件过多，会对文件系统造成压力</li>
-<li>大量小文件的随机读写带来一定的磁盘开销</li>
-<li>数据块写入时所需的缓存空间也会随之增加，对内存造成压力。</li>
-</ul>
-</li>
-</ul>
-</li>
-<li><p>Sort Shuffle特点：</p>
-<ul>
-<li><p>优点：</p>
-<ul>
-<li>小文件的数量大大减少，mapper端的内存占用变少</li>
-<li>Spark不仅可以处理小规模的数据，即使处理大规模的数据也不会很容易的达到性能瓶颈</li>
-</ul>
-</li>
-<li><p>缺点：</p>
-<ul>
-<li>如果mapper中task的数量过大，依旧会产生很多小文件，此时在shuffle传数据的过程中到reduce端，reduce会需要同时大量的记录进行反序列化，导致大量内存消耗和GC负担巨大，造成系统缓慢甚至奔溃</li>
-<li>强制了mapper端必须要排序，即使数据本身并不需要排序</li>
-<li>要基于记录本身进行排序，性能消耗很大</li>
-</ul>
-</li>
-</ul>
-</li>
-</ul>
-</li>
-</ol>
-<h3 id="Spark运行流程"><a href="#Spark运行流程" class="headerlink" title="Spark运行流程"></a>Spark运行流程</h3><ol>
-<li>SparkContext向资源管理器注册并向资源管理器申请运行Executor</li>
-<li>资源管理器分配Executor然后资源管理器启动executor</li>
-<li>Executor发送心跳到资源管理器</li>
-<li>SparkContext构建DAG执行图</li>
-<li>将DAG分解成Stage（TaskSet）</li>
-<li>把Stage发送给TaskScheduler</li>
-<li>Executor向SparkContext申请Task</li>
-<li>TaskScheduler将task发送给Executor运行</li>
-<li>同时SparkContext将应用程序代码发放给Executor</li>
-<li>task在Executor上运行，运行完毕释放所有资源</li>
-</ol>
-<h3 id="Spark数据倾斜"><a href="#Spark数据倾斜" class="headerlink" title="Spark数据倾斜"></a>Spark数据倾斜</h3><ol>
-<li>Spark中的数据倾斜问题主要是指shuffle过程中出现的数据倾斜问题，是由于不同的key对应的数据量不同导致的不同task所处理的数据量不同的问题</li>
-<li>解决方案：<ul>
-<li>预聚合原始数据：避免shuffle过程；增大key粒度</li>
-<li>预处理导致倾斜的key：过滤；使用随机key；sample采样对倾斜key单独进行join</li>
-<li>提高并行度： reduce端并行度的设置，该方法并没有从根本上改变数据倾斜的本质问题，只是尽可能去缓解和减轻shuffle reduce task的数据压力，以及数据倾斜的问题，适用于有校对key对应的数据量都比较大的情况</li>
-<li>使用map join：将较小RDD中的数据直接通过collect算子拉取到Driver端的内存中，然后对其创建一个broadcast变量；接着对另一个RDD执行map类算子，在算子函数内，从broadcast变量中获取较小RDD的全量数据，与当前RDD的每一条数据按照连接key进行比对，如果连接key相同的话，那么就将两个RDD的数据用需要的方式连接起来。这种思路不会发生shuffle操作，从根本上杜绝了join操作可能导致的数据倾斜问题，但是适用条件有限，比较适合有join操作产生数据倾斜问题且其中一个RDD的数据量较小。</li>
-</ul>
-</li>
-</ol>
-<h3 id="Spark性能优化"><a href="#Spark性能优化" class="headerlink" title="Spark性能优化"></a>Spark性能优化</h3><ol>
-<li>RDD复用<br>使用缓存，缓存将DataFrame，数据表或者RDD放入集群中执行器的临时存储区（内存或磁盘），这将使后续读取更快。但是缓存数据会导致序列化，反序列化和存储开销。因此缓存适用于多次重复使用相同数据集的情形。</li>
-<li>尽早filter，减少对内存的占用</li>
-<li>读取大量小文件，使用wholeTextFiles</li>
-<li>合理使用mapPartition和foreachPartition</li>
-<li>并行度设置，即各个stage的task数量。官方推荐，task数量应该设置为spark作业总CPU core数量的2-3倍</li>
-<li>使用持久化和checkpoint</li>
-<li>使用广播变量</li>
-</ol>
-<h3 id="Spark相关问题"><a href="#Spark相关问题" class="headerlink" title="Spark相关问题"></a>Spark相关问题</h3><h4 id="Spark运行效率比MapReduce效率高在哪里"><a href="#Spark运行效率比MapReduce效率高在哪里" class="headerlink" title="Spark运行效率比MapReduce效率高在哪里"></a>Spark运行效率比MapReduce效率高在哪里</h4><p>spark是借鉴了Mapreduce,并在其基础上发展起来的，继承了其分布式计算的优点并进行了改进，spark生态更为丰富，功能更为强大，性能更加适用范围广，mapreduce更简单，稳定性好。主要区别：</p>
-<ul>
-<li>spark把运算的中间数据(shuffle阶段产生的数据)存放在内存，迭代计算效率更高，mapreduce的中间结果需要落地，保存到磁盘</li>
-<li> Spark容错性高，它通过弹性分布式数据集RDD来实现高效容错，RDD是一组分布式的存储在节点内存中的只读性的数据集，这些集合石弹性的，某一部分丢失或者出错，可以通过整个数据集的计算流程的血缘关系来实现重建，mapreduce的容错只能重新计算</li>
-<li>Spark更通用，提供了transformation和action这两大类的多功能api，另外还有流式处理sparkstreaming模块、图计算等等，mapreduce只提供了map和reduce两种操作，流计算及其他的模块支持比较缺乏</li>
-<li>Spark框架和生态更为复杂，有RDD，血缘lineage、执行时的有向无环图DAG，stage划分等，很多时候spark作业都需要根据不同业务场景的需要进行调优以达到性能要求，mapreduce框架及其生态相对较为简单，对性能的要求也相对较弱，运行较为稳定，适合长期后台运行</li>
-<li>Spark计算框架对内存的利用和运行的并行度比mapreduce高，Spark运行容器为executor，内部ThreadPool中线程运行一个Task，mapreduce在线程内部运行container，container容器分类为MapTask和ReduceTask。Spark程序运行并行度高</li>
-<li>Spark对于executor的优化，在JVM虚拟机的基础上对内存弹性利用：storage memory与Execution memory的弹性扩容，使得内存利用效率更高</li>
-</ul>
-<h4 id="Hadoop和Spark的相同点和不同点"><a href="#Hadoop和Spark的相同点和不同点" class="headerlink" title="Hadoop和Spark的相同点和不同点"></a>Hadoop和Spark的相同点和不同点</h4><p>Hadoop底层使用MapReduce计算架构，只有map和reduce两种操作，表达能力比较欠缺，而且在MR过程中会重复的读写hdfs，造成大量的磁盘io读写操作，所以适合高时延环境下批处理计算的应用；</p>
-<p>Spark是基于内存的分布式计算架构，提供更加丰富的数据集操作类型，主要分成转化操作和行动操作，包括map、reduce、filter、flatmap、groupbykey、reducebykey、union和join等，数据分析更加快速，所以适合低时延环境下计算的应用；</p>
-<p>spark与hadoop最大的区别在于迭代式计算模型。基于mapreduce框架的Hadoop主要分为map和reduce两个阶段，两个阶段完了就结束了，所以在一个job里面能做的处理很有限；spark计算模型是基于内存的迭代式计算模型，可以分为n个阶段，根据用户编写的RDD算子和程序，在处理完一个阶段后可以继续往下处理很多个阶段，而不只是两个阶段。所以spark相较于mapreduce，计算模型更加灵活，可以提供更强大的功能。</p>
-<p>但是spark也有劣势，由于spark基于内存进行计算，虽然开发容易，但是真正面对大数据的时候，在没有进行调优的情况下，可能会出现各种各样的问题，比如OOM内存溢出等情况，导致spark程序可能无法运行起来，而mapreduce虽然运行缓慢，但是至少可以慢慢运行完</p>
-<h4 id="RDD持久化原理"><a href="#RDD持久化原理" class="headerlink" title="RDD持久化原理"></a>RDD持久化原理</h4><p>spark非常重要的一个功能特性就是可以将RDD持久化在内存中。</p>
-<p>调用cache()和persist()方法即可。cache()和persist()的区别在于，cache()是persist()的一种简化方式，cache()的底层就是调用persist()的无参版本persist(MEMORY_ONLY)，将数据持久化到内存中。</p>
-<p>如果需要从内存中清除缓存，可以使用unpersist()方法。RDD持久化是可以手动选择不同的策略的。在调用persist()时传入对应的StorageLevel即可。</p>
-<h4 id="Checkpoint机制"><a href="#Checkpoint机制" class="headerlink" title="Checkpoint机制"></a>Checkpoint机制</h4><p>应用场景：当spark应用程序特别复杂，从初始的RDD开始到最后整个应用程序完成有很多的步骤，而且整个应用运行时间特别长，这种情况下就比较适合使用checkpoint功能。</p>
-<p>原因：对于特别复杂的Spark应用，会出现某个反复使用的RDD，即使之前持久化过但由于节点的故障导致数据丢失了，没有容错机制，所以需要重新计算一次数据。</p>
-<p>Checkpoint首先会调用SparkContext的setCheckPointDIR()方法，设置一个容错的文件系统的目录，比如说HDFS；然后对RDD调用checkpoint()方法。之后在RDD所处的job运行结束之后，会启动一个单独的job，来将checkpoint过的RDD数据写入之前设置的文件系统，进行高可用、容错的类持久化操作。</p>
-<p>检查点机制是我们在spark  streaming中用来保障容错性的主要机制，它可以使spark streaming阶段性的把应用数据存储到诸如HDFS等可靠存储系统中，以供恢复时使用。具体来说基于以下两个目的服务：</p>
-<ul>
-<li><p>控制发生失败时需要重算的状态数。Spark streaming可以通过转化图的谱系图来重算状态，检查点机制则可以控制需要在转化图中回溯多远。</p>
-</li>
-<li><p>提供驱动器程序容错。如果流计算应用中的驱动器程序崩溃了，你可以重启驱动器程序并让驱动器程序从检查点恢复，这样spark streaming就可以读取之前运行的程序处理数据的进度，并从那里继续。</p>
-</li>
-</ul>
-<h4 id="checkpoint和持久化的区别"><a href="#checkpoint和持久化的区别" class="headerlink" title="checkpoint和持久化的区别"></a>checkpoint和持久化的区别</h4><p>最主要的区别在于持久化只是将数据保存在BlockManager中，但是RDD的lineage(血缘关系，依赖关系)是不变的。但是checkpoint执行完之后，rdd已经没有之前所谓的依赖rdd了，而只有一个强行为其设置的checkpointRDD，checkpoint之后rdd的lineage就改变了。</p>
-<p>持久化的数据丢失的可能性更大，因为节点的故障会导致磁盘、内存的数据丢失。但是checkpoint的数据通常是保存在高可用的文件系统中，比如HDFS中，所以数据丢失可能性比较低</p>
-<h4 id="RDD机制"><a href="#RDD机制" class="headerlink" title="RDD机制"></a>RDD机制</h4><p>rdd分布式弹性数据集，简单的理解成一种数据结构，是spark框架上的通用货币。所有算子都是基于rdd来执行的，不同的场景会有不同的rdd实现类，但是都可以进行互相转换。rdd执行过程中会形成dag图，然后形成lineage保证容错性等。从物理的角度来看rdd存储的是block和node之间的映射。</p>
-<p>RDD是spark提供的核心抽象，全称为弹性分布式数据集。</p>
-<p>RDD在逻辑上是一个hdfs文件，在抽象上是一种元素集合，包含了数据。它是被分区的，分为多个分区，每个分区分布在集群中的不同结点上，从而让RDD中的数据可以被并行操作（分布式数据集）</p>
-<p>比如有个RDD有90W数据，3个partition，则每个分区上有30W数据。RDD通常通过Hadoop上的文件，即HDFS或者HIVE表来创建，还可以通过应用程序中的集合来创建；RDD最重要的特性就是容错性，可以自动从节点失败中恢复过来。即如果某个结点上的RDD partition因为节点故障，导致数据丢失，那么RDD可以通过自己的数据来源重新计算该partition。这一切对使用者都是透明的。</p>
-<p>RDD的数据默认存放在内存中，但是当内存资源不足时，spark会自动将RDD数据写入磁盘。比如某结点内存只能处理20W数据，那么这20W数据就会放入内存中计算，剩下10W放到磁盘中。RDD的弹性体现在于RDD上自动进行内存和磁盘之间权衡和切换的机制。</p>
-
+        <p>Spark相关知识总结</p>
+        
+          <div class="more-link">
+            <a href="/blog/2021/09/06/Spark%E7%9B%B8%E5%85%B3%E7%9F%A5%E8%AF%86/#more">Read On »</a>
+          </div>
+        
       
     </div>
 </article>
@@ -507,18 +276,12 @@
     </header>
     <div>
       
-        <a id="more"></a>
-
-<p><a target="_blank" rel="noopener" href="https://aws.amazon.com/cn/big-data/what-is-presto/">转载</a> </p>
-<h3 id="什么是Presto"><a href="#什么是Presto" class="headerlink" title="什么是Presto"></a>什么是Presto</h3><p>Presto（或 PrestoDB）是一种开源的分布式 SQL 查询引擎，从头开始设计用于针对任何规模的数据进行快速分析查询。它既可支持非关系数据源，例如 Hadoop 分布式文件系统 (HDFS)、<a target="_blank" rel="noopener" href="https://aws.amazon.com/s3/">Amazon S3</a>、Cassandra、MongoDB 和 <a target="_blank" rel="noopener" href="https://aws.amazon.com/emr/details/hbase/">HBase</a>，又可支持关系数据源，例如 MySQL、PostgreSQL、<a target="_blank" rel="noopener" href="https://aws.amazon.com/redshift/">Amazon Redshift</a>、Microsoft SQL Server 和 Teradata。</p>
-<p>Presto 可在数据的存储位置查询数据，无需将数据移动到独立的分析系统。查询执行可在纯粹基于内存的架构上平行运行，大多数结果在几秒内即可返回。您将会发现，它已被许多知名公司采用，例如 <a target="_blank" rel="noopener" href="https://code.facebook.com/projects/552007124892407/presto/">Facebook</a>、<a target="_blank" rel="noopener" href="https://medium.com/airbnb-engineering/airpal-a-web-based-query-execution-tool-for-data-analysis-33c43265ed1f">Airbnb</a>、<a target="_blank" rel="noopener" href="https://medium.com/netflix-techblog/using-presto-in-our-big-data-platform-on-aws-938035909fd4">Netflix</a>、<a target="_blank" rel="noopener" href="https://www.youtube.com/watch?v=0vdW1ORLWyk&feature=youtu.be&t=20m58s">Atlassian</a> 和 <a target="_blank" rel="noopener" href="https://www.youtube.com/watch?v=LuHxnOQarXU&feature=youtu.be&t=25m13s">Nasdaq</a>。</p>
-<h3 id="Presto的发展"><a href="#Presto的发展" class="headerlink" title="Presto的发展"></a>Presto的发展</h3><p>Presto 最初作为 <a target="_blank" rel="noopener" href="https://code.facebook.com/projects/552007124892407/presto/">Facebook</a> 的项目启动，针对 300PB 的数据仓库运行交互式分析查询，使用大型基于 Hadoop/HDFS 的集群构建。在构建 Presto 之前，Facebook 使用的是 2008 年创建并推出的 Apache Hive，为 Hadoop 生态系统带来熟悉的 SQL 语法。Hive 在将复杂的 Java MapReduce 作业简化成类似 SQL 的查询方面对 Hadoop 生态系统有着重大影响，同时还能够执行大规模的任务。但是，它未针对交互式查询所需的高速性能进行优化。</p>
-<p>在 2012 年，Facebook 数据基础设施组构建了 Presto，这种交互式查询系统能够以 PB 级规模快速运行。它于 2013 年春季在全公司范围内推广。2013 年 11 月，Facebook 将 Presto 作为 Apache 软件许可证下的<a target="_blank" rel="noopener" href="https://github.com/prestodb/presto">开源软件</a>，任何人都可以从 Github 上下载。今天，Presto 已成为在 Hadoop 上进行交互式查询的<a target="_blank" rel="noopener" href="https://github.com/prestodb/presto/wiki/Presto-Users">流行选择</a>，获得了来自 Facebook 和其他组织的大量<a target="_blank" rel="noopener" href="https://github.com/prestodb/presto/graphs/contributors">贡献</a>。Facebook 的 Presto 实施的使用者超过一千名员工，他们每天运行超过 30000 次查询，处理的数据达到 1PB。</p>
-<h3 id="Presto-工作原理"><a href="#Presto-工作原理" class="headerlink" title="Presto 工作原理"></a>Presto 工作原理</h3><p>Presto 是在 Hadoop 上运行的分布式系统，使用与经典大规模并行处理 (MPP) 数据库管理系统相似的架构。它有一个协调器节点，与多个工作线程节点同步工作。用户将其 SQL 查询提交给协调器，由其使用自定义查询和执行引擎进行解析、计划并将分布式查询计划安排到工作线程节点之间。它设计用于支持标准 ANSI SQL 语义，包括复杂查询、聚合、联接、左/右外联接、子查询、开窗函数、不重复计数和近似百分位数。</p>
-<p>查询编译之后，Presto 将请求处理到工作线程节点之间的多个阶段中。所有处理都在内存中进行，并以流水线方式经过网络中的不同阶段，从而避免不必要的 I/O 开销。添加更多工作线程节点可提高并行能力，并加快处理速度。</p>
-<p>为了使 Presto 可扩展到任何数据源，它的设计采用了存储抽象化，以便于轻松地构建可插入的连接器。因此，Presto 拥有大量连接器，既可用于非关系数据源，例如 Hadoop 分布式文件系统 (HDFS)、<a target="_blank" rel="noopener" href="https://aws.amazon.com/s3/">Amazon S3</a>、Cassandra、MongoDB 和 <a target="_blank" rel="noopener" href="https://aws.amazon.com/emr/details/hbase/">HBase</a>，又可用于关系源，例如 MySQL、PostgreSQL、<a target="_blank" rel="noopener" href="https://aws.amazon.com/redshift/">Amazon Redshift</a>、Microsoft SQL Server 和 Teradata。数据在其存储位置接受查询，无需将其移动到独立的分析系统中。</p>
-<h3 id="Presto-和-Hadoop"><a href="#Presto-和-Hadoop" class="headerlink" title="Presto 和 Hadoop"></a>Presto 和 Hadoop</h3><p>Presto 是一种开源分布式 SQL 查询引擎，设计用于对 HDFS 和其他源中的数据进行快速交互式查询。与 Hadoop/HDFS 不同，它没有自己的存储系统。因此，Presto 与 Hadoop 互补，有些机构同时使用这两种产品来解决更广泛的业务挑战。Presto 可以与 Hadoop 的任何实施一起安装，并封装在 <a target="_blank" rel="noopener" href="https://aws.amazon.com/emr/">Amazon EMR</a> Hadoop 分发中。</p>
-
+        <p>Presto介绍</p>
+        
+          <div class="more-link">
+            <a href="/blog/2021/08/05/Presto%E4%BB%8B%E7%BB%8D/#more">Read On »</a>
+          </div>
+        
       
     </div>
 </article>
@@ -558,67 +321,12 @@
     </header>
     <div>
       
-        <a id="more"></a>
-
-<p>Elasticsearch基于Lucene，Lucene搜索是按segment进行的，每一个segment本身就是一个倒排索引，一个Lucene倒排索引包含segment集合和一个提交点（是一个列出了所有已知segment的文件）。新的文档首先被添加到内存的lucene索引缓存中，然后写入到一个基于磁盘的segment，在一次提交后，一个新的segment被添加到提交点并且清空缓存。</p>
-<blockquote>
-<p>一个Lucene索引在ES中就是一个分片，一个ES索引是分片的集合，即一个ES索引是Lucene索引的集合。当ES在ES索引中搜索的时候，它发送查询到每一个属于ES索引的分片（Lucene 索引）上，然后执行分布式检索，合并每个分片的结果到一个全局结果集</p>
-</blockquote>
-<p>（以下提到的索引都是ES索引，Lucene索引表示为segment）</p>
-<p><strong>逐段搜索流程</strong>：</p>
-<ol>
-<li>新的文档被搜集到内存索引缓存中</li>
-<li>缓存不定时进行提交commit，执行以下操作：<ul>
-<li>一个追加了索引的新的segment被写入到磁盘</li>
-<li>追加了新的segment名字的提交点被写入磁盘</li>
-<li>磁盘进行同步，将所有在文件系统缓存中等待的写入都刷新到磁盘</li>
-</ul>
-</li>
-<li>开启一个新的segment，其包含的文档可以被搜索</li>
-<li>内存缓存被清空，等待接收新的文档</li>
-</ol>
-<p><strong>删除和更新</strong>：</p>
-<p>segment是不可改变的，既不能把文档从旧的segment中删除，也无法通过修改旧的segment来反应文档的更新。每个提交点会包含一个*.del*文件来记录被删除文档的信息。</p>
-<p>当一个文档被删除时，实际上只是在*.del*文件中被标记，被标记删除的文档仍然可以被查询匹配到，但是会在最终返回结果前从结果集中移除。</p>
-<p>当一个文档被更新时，旧的文档被标记删除，新的文档被索引到一个新的segment中。查询时两者都会被查到但是旧的文档会在结果返回前被移除。</p>
-<h4 id="近实时搜索"><a href="#近实时搜索" class="headerlink" title="近实时搜索"></a>近实时搜索</h4><p>提交commit一个新的segment到磁盘需要一次同步fsync操作来确保segment被持久化到磁盘上，这样在节点挂了时不会丢失数据。但是fsync操作代价很大，如果每次索引一个文档都去执行一次的话会有很大的性能问题。</p>
-<p>通过在提交前，将缓存中的内容写入到一个内存segment中，使这些还没有被提交的文档可以被搜索，然后清空缓存等待新的文档。Lucene允许新的segment被写入和打开使其包含的文档在没有进行一次完整的提交时便对搜索可见。这种方式比进行一次提交代价要小得多，并且在不影响性能的前提下可以被频繁的执行。</p>
-<p>通过refresh操作来写入和打开一个新的segment。默认情况下每个分片会每秒自动刷新一次，即文档的变化并不是立即对搜索可见而是在一秒后变为可见，这就是ES近实时搜索的原因。</p>
-<h4 id="Translog"><a href="#Translog" class="headerlink" title="Translog"></a>Translog</h4><p>上述过程中提到的内存segment用于在提交之前使文档可以被搜索，但是在提交之前如果节点挂掉，那么这部分数据就会丢失。所以ES增加一个transaction log，即translog来记录ES的每一次操作：</p>
-<ol>
-<li>一个文档被索引后被添加到内存缓冲区，将操作日志记录到translog</li>
-<li>通过refresh操作时内存中文档被刷新到一个新的内存segment中，清空缓存但是保留translog。这个内存segment时被打开的使其包含的文档可以被搜索</li>
-<li>不断重复这个过程，更多文档添加到内存缓冲区并追加到translog中，并在一秒后refresh到内存segment中</li>
-<li>随着translog变得越来越大，到达某个界限后执行flush操作：执行一次全量提交commit，创建一个新的translog：<ul>
-<li>所有在内存缓冲区中的文档都被写入一个新的segment中，即持久化到磁盘上，即内存segment转为物理segment</li>
-<li>缓冲区被清空</li>
-<li>新的提交点被写入磁盘</li>
-<li>文件系统缓存通过fsync被flush</li>
-<li>删除旧的translog</li>
-</ul>
-</li>
-</ol>
-<p>translog提供所有还没有被刷新到磁盘的操作的持久化记录，当ES启动时，它会从磁盘中使用最后一个提交点去恢复已知的segment，并且重新执行translog中所有在最后一次提交后发生的变更操作。</p>
-<p>translog也被用来提供实时的CURD。当你尝试通过ID查询，更新，删除一个文档，它会尝试在从相应的segment检索之前，首先检查translog中最近所有的变更，这意味着总是可以获取到文档的最新版本。</p>
-<h4 id="flush操作"><a href="#flush操作" class="headerlink" title="flush操作"></a>flush操作</h4><p>一次flush操作是指执行一个提交commit且截断translog。分片每30分钟会自动flush，或者在translog太大时进行flush，这些阈值可以进行配置。</p>
-<h4 id="segment合并"><a href="#segment合并" class="headerlink" title="segment合并"></a>segment合并</h4><p>由于自动刷新流程每秒会创建一个新的段 ，这样会导致短时间内的段数量暴增。而段数目太多会带来较大的麻烦。 每一个段都会消耗文件句柄、内存和cpu运行周期。更重要的是，每个搜索请求都必须轮流检查每个段；所以段越多，搜索也就越慢。</p>
-<p>Elasticsearch通过在后台进行段合并来解决这个问题。小的段被合并到大的段，然后这些大的段再被合并到更大的段。</p>
-<p>段合并的时候会将那些旧的已删除文档从文件系统中清除。被删除的文档（或被更新文档的旧版本）不会被拷贝到新的大段中。</p>
-<p>合并流程：</p>
-<ol>
-<li>当索引的时候，refresh操作会创建新的segment并将其打开以便搜索</li>
-<li>合并进程选择一小部分大小相似的段，在后台将它们合并到更大的段中。这个过程不会中断索引和搜索</li>
-<li>合并结束，删除老的segment<ul>
-<li>新的segment被flush到了磁盘</li>
-<li>写入一个包含新的segment且排除旧的和被合并的segment的新提交点</li>
-<li>新的segment被打开供搜索</li>
-<li>旧的segment被删除</li>
-</ul>
-</li>
-</ol>
-<p><a target="_blank" rel="noopener" href="https://www.elastic.co/guide/cn/elasticsearch/guide/current/indexing-performance.html#segments-and-merging">合并设置</a></p>
-<p><a target="_blank" rel="noopener" href="https://www.elastic.co/guide/cn/elasticsearch/guide/current/near-real-time.html">原文</a></p>
-
+        <p>ES近实时搜索与Translog介绍</p>
+        
+          <div class="more-link">
+            <a href="/blog/2021/07/26/Elasticsearch%E8%BF%91%E5%AE%9E%E6%97%B6%E6%90%9C%E7%B4%A2%E4%B8%8ETranslog/#more">Read On »</a>
+          </div>
+        
       
     </div>
 </article>
@@ -658,17 +366,12 @@
     </header>
     <div>
       
-        <a id="more"></a>
-
-<p>选举主节点和改变集群状态是两个最根本的任务因为所有正常的主节点必须一起正常工作。即使在某些节点挂了时维持这些工作的稳定是非常重要的。ES通过考虑每个动作都收到仲裁节点成功的响应来实现健壮性，仲裁节点是集群中可用主节点的子集。使用一个子集响应的优点是，即使某些节点挂了也不会阻止集群继续执行任务。仲裁节点需要谨慎选取以防集群<em>脑裂</em>，就是说集群被分成了两部分并且每一部分可能做出一些与另一部分不一致的决定。</p>
-<p>ES允许你可以在正在运行的集群中增加或者删除节点，大多情况下，只需要简单的启动或者关闭节点即可。</p>
-<p>在添加或者删除节点时，ES通过更新集群的投票配置来维护最佳容错级别，投票配置时一组符合符合主节点条件的节点，在做出选择新主节点或者提交新集群状态等决策时，它们的响应会被进行统计。当收到投票配置中半数以上节点的响应时会做出决定。通常来说投票配置中的节点集合与当前集群中所有符合主节点的节点集合保持一致，但在某些情况下会有所不同。</p>
-<p>为了确保集群可用，千万不要在同一时间关闭投票配置中半数以上的节点。只要半数以上的投票节点正常工作，集群就会正常工作。比如一个集群中有三个或四个符合主节点条件的节点，集群可以忍受其中一个节点挂掉。如果仅有两个或者一个符合主节点的节点，它们必须全都可用。</p>
-<p>在一个节点加入或者离开集群之后，被选举的主节点必须报告集群状态来更新投票配置中的节点，这个过程在很短时间内完成。在从集群中移除更多节点之前等投票配置更新完成是很重要的。</p>
-<h4 id="主节点选举"><a href="#主节点选举" class="headerlink" title="主节点选举"></a>主节点选举</h4><p>不论在启动或者现有的被选举的主节点失败时，ES都是用一个选择进程来同意一个被选择的节点。任何符合主节点条件的节点都可以开始选举，通常第一次选举就会成功。只有当两个节点碰巧同时开始选举时，选举才会失败，所以每个节点上的选择都是随机时间触发的，以减少这种情况发生的概率。在选出主节点之前节点将重试选举，并在失败时退出，这样保证选举最终会成功。主节点选举的触发事件是可以配置的。</p>
-<h4 id="集群维护，滚动重启和维护"><a href="#集群维护，滚动重启和维护" class="headerlink" title="集群维护，滚动重启和维护"></a>集群维护，滚动重启和维护</h4><p>需要集群维护任务会涉及到一个或多个节点的暂时下线然后重新上线。默认情况下，如果集群中的一个符合主节点的节点下线，集群依然可用，比如滚动重启。另外，如果多个节点先停掉然后又启动，那么集群会自动回复，比如在整个集群重启阶段。这些情况都无需额外的操作，因为主节点集合不是永久不变的。</p>
-<p><a target="_blank" rel="noopener" href="https://www.elastic.co/guide/en/elasticsearch/reference/current/modules-discovery-quorums.html">原文</a></p>
-
+        <p>ES主节点的选举策略</p>
+        
+          <div class="more-link">
+            <a href="/blog/2021/07/23/Elasticsearch%E5%9F%BA%E4%BA%8E%E4%BB%B2%E8%A3%81%E7%9A%84%E9%80%89%E4%B8%BE%E7%AD%96%E7%95%A5/#more">Read On »</a>
+          </div>
+        
       
     </div>
 </article>
@@ -708,18 +411,12 @@
     </header>
     <div>
       
-        <a id="more"></a>
-
-<p>节点发现是ES集群formation模块找到其他节点形成集群的过程。当你启动一个ES节点或者一个节点认为主节点挂了并开始选择新的主节点时运行节点发现任务。</p>
-<p>节点发现开始时会获取来自一个或多个<strong>种子主机提供者</strong>的种子地址，还有最后已知集群中所有可以称为主节点的地址。这个过程分为两个阶段进行：一，集群中的每个节点通过连接每个种子地址来尝试验证种子地址所连接的节点并判断该节点是否可以成为主节点；二，验证成功后，节点会向远程节点分享可以成为主节点的节点列表，远程节点再依次告知与它同级的节点。节点继续探索在此过程中发现的新节点然后告诉它的同级节点，以此类推。</p>
-<p>如果一个节点不是可用主节点，它会继续进行节点发现直到获取到一个被选举成功的主节点。如果还是没有找到主节点，则会在一段时间后进行重试，默认为1s。</p>
-<h4 id="种子主机提供者"><a href="#种子主机提供者" class="headerlink" title="种子主机提供者"></a>种子主机提供者</h4><p>默认情况下，集群formation模块提供了两种种子主机提供者来配置种子节点：基于设置和基于文件的种子主机提供者。通过插件可以扩展到云服务或者其他形式的种子服务提供者。选择哪种提供者可以通过<em>discovery.seed_providers</em>设置来指定，默认为基于设置的提供方式。这个设置支持提供者列表，允许你的服务中使用多种提供者来提供种子地址。</p>
-<p>每个种子主机提供者会提供种子节点的IP地址或者服务器名称。如果提供服务器名称则会由DNS服务解析为IP地址。如果一个服务器地址被解析为多个IP地址，则ES会尝试在这些地址中发现所有的种子节点。如果TCP端口没有指定，则使用<em>transport.profiles.default.port</em>的值，如果这个值也没有设置，则使用<em>transport.port</em>。DNS探索并发数默认为10，超时时间默认为5s。</p>
-<h5 id="基于设置的种子主机提供者"><a href="#基于设置的种子主机提供者" class="headerlink" title="基于设置的种子主机提供者"></a>基于设置的种子主机提供者</h5><p>基于设置的种子主机提供者会在设置中静态的配置一些种子服务地址，地址是IP或者服务器名称，在进行节点发现是服务器名称会被解析为IP地址。</p>
-<figure class="highlight java"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br></pre></td><td class="code"><pre><code class="hljs java">discovery.seed_hosts:<br>   - <span class="hljs-number">192.168</span><span class="hljs-number">.1</span><span class="hljs-number">.10</span>:<span class="hljs-number">9300</span><br>   - <span class="hljs-number">192.168</span><span class="hljs-number">.1</span><span class="hljs-number">.11</span> <br>   - seeds.mydomain.com <br></code></pre></td></tr></table></figure>
-<h5 id="基于文件的种子主机提供者"><a href="#基于文件的种子主机提供者" class="headerlink" title="基于文件的种子主机提供者"></a>基于文件的种子主机提供者</h5><p>这种方式利用一个外部文件来配置种子主机。当这个文件发生变化时ES会重新加载，所以无需重新启动每个节点就可以动态更新种子地址。例如，这为在Docker中运行的ES实例提供了一种方便的机制，可以在节点启动不知道种子IP地址时动态的提供需要连接的种子IP地址。</p>
-<p>还有一些其他提供者如：EC2 host provider，Azure Classic host provider， Google Computer Engine host provider。</p>
-
+        <p>ES集群节点发现过程介绍</p>
+        
+          <div class="more-link">
+            <a href="/blog/2021/07/22/ES%E9%9B%86%E7%BE%A4%E8%8A%82%E7%82%B9%E5%8F%91%E7%8E%B0/#more">Read On »</a>
+          </div>
+        
       
     </div>
 </article>
@@ -755,75 +452,12 @@
     </header>
     <div>
       
-        <a id="more"></a>
-
-<p>Hive到底是什么？它的存在是为了解决什么问题？Hive有什么优缺点？它与传统数据库之间有什么关系？Hive在大数据分析中扮演着什么角色？Let’s explore Hive together.</p>
-<h2 id="Hive是什么"><a href="#Hive是什么" class="headerlink" title="Hive是什么"></a>Hive是什么</h2><p>简单来说，Hive是一种将SQL语句转换为MapReduce/Tez/Spark程序的工具。有了Hive我们不需要学习如何写MapReduce/Tez/Spark程序来进行数据分析，只需使用我们已经熟悉的SQL语言进行我们需要的数据查询，Hive会将SQL解析并转化为相应的计算程序在HDFS上运行并返回结果。</p>
-<p><strong>官方定义</strong></p>
-<blockquote>
-<p>The Apache Hive data warehouse software facilitates reading, writing, and managing large datasets residing in distributed storage using SQL. Built on top of Apache Hadoop, it provides:</p>
-<ul>
-<li>Tools to enable easy access to data via SQL, thus enabling data warehousing tasks such as extract/transform/load(ETL), reporting, and data analysis</li>
-<li>A mechanism to impose structure on a variety of data formats</li>
-<li>Access to files stored either directly in Apache HDFS or in other data storage systems such as Apache HBase</li>
-<li>Query execution using Apache Hadoop MapReduce, Apache Tez or Apache Spark frameworks.</li>
-</ul>
-<hr>
-<p>数据仓库工具Hive致力于使用SQL来简化在分布式存储中的数据读写以及数据集管理问题。基于Apache Hadoop实现，Hive提供了：</p>
-<ul>
-<li>通过SQL简化数据访问的工具，即简化数据仓库任务如数据提取、转化、加载、报告和数据分析等。</li>
-<li>将各种各样的数据格式转换为特定结构的机制</li>
-<li>可以直接访问HDFS或者其他数据存储系统如HBase中的文件</li>
-<li>可以指定数据计算框架如MapReduce、Tez或者Spark来执行查询</li>
-</ul>
-</blockquote>
-<p><strong>为什么是基于Hadoop</strong></p>
-<p>根据上述定义可以看到:</p>
-<ol>
-<li>Hive处理的数据实际上是存放在HDFS或其他存储系统中，它本身不会存储数据</li>
-<li>底层数据计算框架使用MapReduce、Tez或Spark</li>
-<li>Hive调度资源使用Yarn框架</li>
-</ol>
-<p>所以Hive实际上是一个Hadoop的工具，为了帮助大家更加方便的使用Hadoop来工作，如果没有Hadoop，或许Hive存在的意义也就没有了吧。</p>
-<h2 id="Hive的优缺点"><a href="#Hive的优缺点" class="headerlink" title="Hive的优缺点"></a>Hive的优缺点</h2><p><strong>优点</strong></p>
-<ol>
-<li>使用简单，用户只需会使用SQL即可</li>
-<li>使数据分析工作变得简单，处理大数据优势明显</li>
-<li>支持用户自定义函数</li>
-</ol>
-<p><strong>缺点</strong></p>
-<ol>
-<li>表达能力有限，无法表达迭代式算法（如第一个MapReduce程序的输出作为第二个MapReduce程序的输入）</li>
-<li>Hive转换SQL生成的MapReduce程序通常不够有效率</li>
-<li>Hive调优困难，粒度较粗</li>
-</ol>
-<h2 id="Hive架构组成"><a href="#Hive架构组成" class="headerlink" title="Hive架构组成"></a>Hive架构组成</h2><ul>
-<li>两种客户端<ol>
-<li>CLI（command-line interface）命令行客户端</li>
-<li>JDBC客户端</li>
-</ol>
-</li>
-<li>四种驱动<ol>
-<li>SQL Parser：sql解析器，检查sql语法</li>
-<li>Physical Plan：编译器，将sql语句转换为MapReduce或者指定的计算框架程序</li>
-<li>Query Optimizer：优化器，优化查询</li>
-<li>Execution：执行器，执行计算程序</li>
-</ol>
-</li>
-<li>元数据库Metastore<ol>
-<li>Metastore是一个数据库，用于存储需要处理的数据的元数据，比如表名，表所属的数据库，表的用户信息，表字段，表数据所在的目录等等，将这些元数据存储在一个关系型数据库中，这个数据库就是Hive的Metastore</li>
-<li>Hive自带的Metastore是一个Derby数据库，但因为Derby不支持并发，一遍将Derby替换为Mysql</li>
-</ol>
-</li>
-</ul>
-<p>所以Hive处理过程中会读取两部分数据：存放在HDFS中的结构化数据（要处理的大数据）以及存放在Mysql中的元数据（目标数据信息）。通过读取元数据信息，找到对应的字段；然后把字段映射到结构化数据中，通过映射形成一张虚表，用于Hive数据查询与分析。</p>
-<h2 id="Hive的特点"><a href="#Hive的特点" class="headerlink" title="Hive的特点"></a>Hive的特点</h2><ul>
-<li>Hive是针对数据仓库设计的，主要用于读，所有的数据在加载时已经确定好，适合处理静态数据</li>
-<li>Hive本身计算的延迟较高</li>
-<li>Hive基于Hadoop，也具备可扩展性，支持并发运行</li>
-<li>Hive是一种数仓工具，不是数据库</li>
-</ul>
-
+        <p>Hive介绍</p>
+        
+          <div class="more-link">
+            <a href="/blog/2021/07/17/%E4%BB%80%E4%B9%88%E6%98%AFHive/#more">Read On »</a>
+          </div>
+        
       
     </div>
 </article>
