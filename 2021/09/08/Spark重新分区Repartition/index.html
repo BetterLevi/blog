@@ -59,8 +59,7 @@
     </header>
 
     <section>
-      <p>Spark Repartition介绍</p>
-<a id="more"></a>
+      <a id="more"></a>
 
 <p>在分布式环境中，数据合理分布是提高性能的关键因素。在SparkSQL的DataFrame API中有一个*repartition()*函数用于控制数据在Spark集群上分布。然而高效地使用这个函数并不容易因为改变数据分布就意味着集群节点间物理数据移动（即Shuffle）的损耗。</p>
 <p>根据经验来看，使用repartition消耗较大因为该操作会导致shuffle。这篇文章中我们将更加深入的探讨在某些情景下，在合适的位置增加一个shuffle并移除其他两个shuffle会使整体执行更加高效。我们先来了解一些概念来理解关于数据分布的信息在Spark SQL中是如何内部利用的，然后再介绍一些使用repartition的实际示例。</p>

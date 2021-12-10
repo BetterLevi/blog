@@ -59,13 +59,13 @@
     </header>
 
     <section>
-      <h3 id="介绍"><a href="#介绍" class="headerlink" title="介绍"></a>介绍</h3><p>快速排序算法是一种基于分治思想的排序算法，分治思想有以下特点：</p>
+      <a id="more"></a>
+
+<h3 id="介绍"><a href="#介绍" class="headerlink" title="介绍"></a>介绍</h3><p>快速排序算法是一种基于分治思想的排序算法，分治思想有以下特点：</p>
 <ol>
 <li>将一个问题可划分为同一类型的若干个子问题，子问题的规模相同或者相近</li>
 <li>求解这些子问题，然后合并这些子问题的解，可得到原问题的答案</li>
 </ol>
-<a id="more"></a>
-
 <p>​         快速排序的主要思想按照元素的值进行划分。对于一个数组A，经过一次快速排序后，使得A[i]左边的元素全都小于等于A[i]，A[i]右边的元素全部大于等于A[i]，然后利用相同的排序方式处理两个子数组（即A[i]左右两边的元素组成的数组），直到子数组的元素个数为1，此时原数组成为有序数组。</p>
 <p>算法伪代码如下：</p>
 <figure class="highlight java"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br></pre></td><td class="code"><pre><code class="hljs java">QuickSort(A[low...high]):<br>	<span class="hljs-comment">//输入：数组A中起始下标为low，结束下标为high的所有元素</span><br>	<span class="hljs-comment">//输出：A[low...high]中的元素非降序排序</span><br>	<span class="hljs-keyword">if</span> low &lt; high:<br>			<span class="hljs-comment">//partition(A[low...high])函数返回s</span><br>			<span class="hljs-comment">//使s左边的元素全部小于等于A[s],s右边的元素全部大于等于A[s]</span><br>			s = partition(A[low...high])<br>      QuickSort(A[low...s-<span class="hljs-number">1</span>])<br>      QuickSort(A[s+<span class="hljs-number">1.</span>..high])<br></code></pre></td></tr></table></figure>

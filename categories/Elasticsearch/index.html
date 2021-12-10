@@ -88,7 +88,9 @@
     </header>
     <div>
       
-        <p>分片分配是将分片分配给节点的过程，这个过程可以发生在初始恢复、副本分配、重新平衡、添加或者删除节点时。</p>
+        <a id="more"></a>
+
+<p>分片分配是将分片分配给节点的过程，这个过程可以发生在初始恢复、副本分配、重新平衡、添加或者删除节点时。</p>
 <p>主节点的任务之一就是决定哪个分片被分配到哪个节点上，并在集群重新平衡时在节点之间进行分片转移。</p>
 <p>控制分片分配过程有以下几种设置：</p>
 <ul>
@@ -98,11 +100,97 @@
 <li>集群级别的分片分配过滤器：允许从分配中排除某些节点或者节点组，以便它们可以退役</li>
 <li>另外还有一些其他设置</li>
 </ul>
-        
-          <div class="more-link">
-            <a href="/blog/2021/07/21/%E9%9B%86%E7%BE%A4%E5%88%86%E7%89%87%E5%88%86%E9%85%8D%E5%92%8C%E8%B7%AF%E7%94%B1%E8%AE%BE%E7%BD%AE/#more">Read On »</a>
-          </div>
-        
+<h3 id="集群级别分片分配设置"><a href="#集群级别分片分配设置" class="headerlink" title="集群级别分片分配设置"></a>集群级别分片分配设置</h3><p><strong>cluster.routing.allocation.enable</strong></p>
+<p>根据分片类型决定是否开启分配，分片类型有：</p>
+<ul>
+<li>all，默认值，所有类型的分片</li>
+<li>primaries，仅对于主分片</li>
+<li>new_primaries，仅对于新索引的主分片</li>
+<li>none，所有类型的分片都不用进行分配</li>
+</ul>
+<p>这个设置不会影响当节点重启时本地主分片的恢复。拥有一个未分配主分片的副本的节点在重启时会立即恢复该主分片，假设它的分配ID与集群状态中的一个活跃分配ID相匹配。</p>
+<p><strong>cluster.routing.allocation.node_concurrent_incoming_recoveries</strong></p>
+<p>分片被分配到当前节点的最大并发数量，默认为2。</p>
+<p><strong>cluster.routing.allocation.node_concurrent_outgoing_recoveries</strong></p>
+<p>当前分片被分配到其他节点的最大并发数量，默认为2.</p>
+<p><strong>cluster.routing.allocation.node_initial_primaries_recoveries</strong></p>
+<p>当副本的恢复通过网络进行时，节点重启后未分配的主节点的恢复将使用来自本地磁盘的数据。这些恢复应该很快所以可以让初始主分片恢复在同一个节点上并行执行，并行数量默认为4。</p>
+<p><strong>cluster.routing.allocation.same_shard.host</strong></p>
+<p>根据主机名和主机地址来检查并组织在同一台主机上的不同实例之间进行分片分配，默认为false。</p>
+<h3 id="分片重新平衡设置"><a href="#分片重新平衡设置" class="headerlink" title="分片重新平衡设置"></a>分片重新平衡设置</h3><p>当一个集群中的每个节点上的每个索引的分片数量都是相等的，没有集中在某个节点上，那么集群就是平衡的。ES运行着一个名叫rebalancing的进程在集群中进行分片移动以保持其平衡性。重新平衡遵守所有分片分配规则比如allocation filtering和forced awareness，这些规则可能导致集群无法完全平衡。这种情况下，重新平衡会尽力在所配置的规则中实现最均衡的集群。如果你正在使用数据层，那么ES会自动使用allocation filter规则将每个分片放置在适当的层中。这些规则意味着平衡器在每一层都是独立工作的。</p>
+<p><strong>cluster.routing.rebalance.enable</strong></p>
+<p>同上</p>
+<p><strong>cluster.routing.allocation.allow_rebalance</strong></p>
+<p>分片重新平衡的条件：always， indices_primaries_active（所有主分片都已经被分配），indices_all_active（默认，所有主分片和副本分配都已经被分配）</p>
+<p><strong>cluster.routing.allocation.cluster_concurrent_rebalance</strong></p>
+<p>集群下分片重新分配的最大并发数量，默认为2。这个设置只会在集群不均衡触发重新分配时生效。</p>
+<h3 id="分片平衡启发式设置"><a href="#分片平衡启发式设置" class="headerlink" title="分片平衡启发式设置"></a>分片平衡启发式设置</h3><p>通过计算一个节点上已被分配的分片计算其权重，通过降低权重高的节点提升权重低的节点来达到集群平衡。集群平衡意味着无法再通过分片移动来使任意节点间的权重差值更小于一个配置的阈值。可以配置这个计算规则：</p>
+<p><strong>cluster.routing.allocation.balance.shard</strong></p>
+<p>定义在节点上分配的分片总数的权重因子，默认为0.45f。提高这个值就提高了集群中所有节点上分片数量保持一致的趋势。</p>
+<p><strong>cluster.routing.allocation.balance.index</strong></p>
+<p>定义分配在节点上的每个索引的分片数的权重因子，默认为0.55f。每个索引的分片数量趋于一致。</p>
+<p><strong>cluster.routing.allocation.balance.threshold</strong></p>
+<p>即上面提到的阈值，大于该值时会继续进行平衡优化操作。</p>
+<h3 id="基于磁盘的分配设置"><a href="#基于磁盘的分配设置" class="headerlink" title="基于磁盘的分配设置"></a>基于磁盘的分配设置</h3><p>基于磁盘的分片分配器确保所有节点都有足够的磁盘空间，而无需执行不必要的分片移动。它根据低水位和高水位这一对阈值来分配分片。它的主要目标是确保没有节点超过高水位，或者至少这种超过只是暂时的。如果一个节点超过了高水位，那么ES将通过将它的一些分片移动到集群中的其他节点来解决这个问题。</p>
+<p>分配器还试图通过禁止将更多分片分配给超过低水位线的节点来使节点远离高水位线。 重要的是，如果你的所有节点都超过了低水位线，则无法分配新的分片，并且 ES将无法在节点之间移动任何分片以将磁盘使用率保持在高水位线以下。 你必须确保您的集群总共有足够的磁盘空间，并且始终有一些节点低于低水位线。</p>
+<p>基于磁盘分配的策略也得遵守分片移动规则。数据层同上，每层独立工作。</p>
+<p>如果节点填满其磁盘的速度比 Elasticsearch 将分片移动到其他地方的速度快，则存在磁盘完全填满的风险。 为了防止这种情况，作为最后的手段，一旦磁盘使用量达到洪水位，Elasticsearch 将阻止写入受影响节点上的分片索引。 它还将继续将分片移动到集群中的其他节点上。 当受影响节点上的磁盘使用率低于高水位线时，Elasticsearch 会自动删除写入块。</p>
+<p>配置项：</p>
+<p><strong>cluster.routing.allocation.disk.threshold_enabled</strong></p>
+<p><strong>cluster.routing.allocation.disk.watermark.low</strong></p>
+<p>磁盘使用率的低水位，默认值为85%，超过这个值时ES将不会分配分片到该节点上。这个设置不会对新创建索引的主分片产生影响，但会阻止它们的副本分片被分配到该节点。</p>
+<p><strong>cluster.routing.allocation.disk.watermark.high</strong></p>
+<p>磁盘使用率高水位，默认值为90%，超过这个值时ES会尝试将该节点上的分片进行重新分配。这个设置会影响所有分片。</p>
+<p><strong>cluster.routing.allocation.disk.watermark.enable_for_single_data_node</strong></p>
+<p>单个数据节点是否需要忽视磁盘水位设置</p>
+<p><strong>cluster.routing.allocation.disk.watermark.flood_stage</strong></p>
+<p>磁盘使用率洪水位，默认值为95%，达到这个值时ES会将每个索引设置为只读。</p>
+<p><strong>cluster.routing.allocation.disk.watermark.flood_stage.frozen</strong></p>
+<p><strong>cluster.routing.allocation.disk.watermark.flood_stage.frozen.max_headroom</strong></p>
+<p><strong>cluster.info.update.interval</strong></p>
+<p>检查磁盘使用率的频率，默认为30s</p>
+<h3 id="分片分配感知"><a href="#分片分配感知" class="headerlink" title="分片分配感知"></a>分片分配感知</h3><p>你可以使用自定义节点属性作为感知属性，以便使ES在分配分片时考虑物理硬件配置。如果ES知道哪些节点位于同一物理服务器，同一机架或者同一区域中，那么它可以分布主分片及其副本分片，以最大限度地降低在故障时丢失所有分片副本的风险。</p>
+<p>当分片分配感知启用时，分片仅会被分配到那些设置了感知属性值的节点。如果有多个感知属性值，ES在分配分片时会独立考虑每个属性值。</p>
+<p>默认情况下，ES使用自适应副本选择策略来路由搜索或者GET请求。但是当有分配感知属性存在时，ES会优先使用相同位置（有相同感知属性）的分片来处理请求，这个行为可以通过设置来禁用<em>export ES_JAVA_OPTS=”$ES_JAVA_OPTS -Des.search.ignore_awareness_attributes=true”</em></p>
+<h4 id="启用分片分配感知"><a href="#启用分片分配感知" class="headerlink" title="启用分片分配感知"></a>启用分片分配感知</h4><ol>
+<li><p>用自定义的节点属性来表明每个节点的位置。例如，如果你想ES将分片分配到不同的机架中，你可以在每个节点的<em>elasticsearch.yml</em>文件中配置叫做<em>rack_id</em>的感知属性</p>
+<figure class="highlight java"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><code class="hljs java">node.attr.rack_id: rack_one<br></code></pre></td></tr></table></figure>
+<p>你也可以在启动一个节点时设置自定义属性</p>
+<figure class="highlight java"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><code class="hljs java">`./bin/elasticsearch -Enode.attr.rack_id=rack_one`<br></code></pre></td></tr></table></figure>
+
+</li>
+<li><p>告诉ES在分配分片时需要考虑到一个或多个感知属性，通过在每个主节点的配置文件<em>elasticsearch.yml</em>中设置<em>cluster.routing.allocation.awareness.attributes</em></p>
+<figure class="highlight java"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><code class="hljs java">cluster.routing.allocation.awareness.attributes: rack_id <br></code></pre></td></tr></table></figure>
+
+
+</li>
+</ol>
+<p>在这个例子中，如果你想启动两个具有<em>node.attr.rack_id：rack_one</em>属性的节点，并创建有5个主分片和1个副本分片的索引，那么所有的主副分片都会在这两个节点之间进行分配。</p>
+<p>如果你添加了两个具有<em>node.attr.rack_id：rack_two</em>属性的节点，ES会将部分分片移动到新节点，并保证一个分片的两个副本不会出现在同一机架中。</p>
+<p>如果机架2挂了并关闭了它的两个节点，默认情况ES将丢失的分片副本分配给1号机架中节点。为了防止在同一个位置分片特定分片的多个副本，可以启用强制感知。（Force awareness）</p>
+<h3 id="强制感知"><a href="#强制感知" class="headerlink" title="强制感知"></a>强制感知</h3><p>默认情况下，如果一个位置失败，Elasticsearch会将所有丢失的副本分片分配给其余的位置。虽然您可能在所有位置都有足够的资源来托管主分片和副本分片，但单个位置可能无法托管所有分片。</p>
+<p>为了防止出现故障时单个位置过载，你可以设置<em>cluster.routing.allocation.awareness.force</em>，以便在另一个位置的节点可用之前不分配副本。</p>
+<p>例如，如果你有一个名为zone的感知属性，并且在zone1和zone2中配置了节点，那么你可以使用强制感知来防止Elasticsearch在只有一个可用的zone时分配副本</p>
+<figure class="highlight java"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br></pre></td><td class="code"><pre><code class="hljs java">cluster.routing.allocation.awareness.attributes: zone<br>cluster.routing.allocation.awareness.force.zone.values: zone1,zone2 <br></code></pre></td></tr></table></figure>
+
+
+<h3 id="集群级分片分配过滤"><a href="#集群级分片分配过滤" class="headerlink" title="集群级分片分配过滤"></a>集群级分片分配过滤</h3><p>你可以使用集群级分片分配过滤器来控制Elasticsearch从任何索引中分配分片的位置。这些集群范围的过滤器与逐索引分配过滤和分配感知一起应用。</p>
+<p>分片分配过滤器可以基于自定义节点属性或内置的<em>_name</em>,<em>host_ip</em>, <em>_publish_ip</em>, <em>_ip</em>, <em>_host</em>, <em>_id</em>, <em>_tier</em>属性。</p>
+<h3 id="其他集群设置"><a href="#其他集群设置" class="headerlink" title="其他集群设置"></a>其他集群设置</h3><h4 id="元数据"><a href="#元数据" class="headerlink" title="元数据"></a>元数据</h4><p>整个集群可以通过以下设置来使它只读：</p>
+<p><strong>cluster.blocks.read_only</strong></p>
+<p><strong>cluster.blocks.read_only_allow_delete</strong></p>
+<h4 id="集群分片限制"><a href="#集群分片限制" class="headerlink" title="集群分片限制"></a>集群分片限制</h4><p>基于集群中的节点数量，集群中的分片数会有一个软限制，这是为了防止无意中破坏集群稳定的操作。</p>
+<p>如果某个操作(如创建新索引、恢复索引的快照或打开一个关闭的索引)会导致集群中的分片数量超过该限制，则该操作将失败，并报出提示分片限制的错误。</p>
+<p>如果集群由于节点变动或者设置变动已经超出限制，所有创建和打开索引的操作都会失败直到提升下面所说的限制或者关闭/删除一些索引来使分片数量低于限制。</p>
+<p>集群分片限制对于普通（非冻结）索引默认为每个非冻结数据节点 1,000 个分片，对于冻结索引每个冻结数据节点默认为 3000 个分片。 所有开放索引的主分片和副本分片都计入限制，包括未分配的分片。 例如，具有 5 个主分片和 2 个副本的开放索引计为 15 个分片。 已经关闭的索引不影响分片计数。</p>
+<p><strong>cluster.max_shards_per_node</strong></p>
+<p>集群中主副分片的总数量限制。</p>
+<p>Elasticsearch 拒绝任何创建超过此限制允许的分片的请求。 例如，一个 cluster.max_shards_per_node 设置为 100 和三个数据节点的集群的分片限制为 300。如果集群已经包含 296 个分片，Elasticsearch 会拒绝任何向集群添加五个或更多分片的请求。</p>
+<p><strong>cluster.max_shards_per_node.frozen</strong></p>
+<p>集群的主和副本冻结分片总数的限制。</p>
+<p>Elasticsearch 拒绝任何创建超过此限制允许的冻结分片的请求。 例如，一个 cluster.max_shards_per_node.frozen 设置为 100 和三个冻结数据节点的集群的冻结分片限制为 300。如果集群已经包含 296 个分片，Elasticsearch 会拒绝任何向集群添加五个或更多冻结分片的请求 。</p>
+<p><a target="_blank" rel="noopener" href="https://www.elastic.co/guide/en/elasticsearch/reference/current/modules-cluster.html">原文</a></p>
+
       
     </div>
 </article>
@@ -138,12 +226,29 @@
     </header>
     <div>
       
-        <p>Elasticsearch 7.13特性介绍</p>
-        
-          <div class="more-link">
-            <a href="/blog/2021/07/20/Elasticsearch7-13%E7%9A%84%E6%96%B0%E7%89%B9%E6%80%A7/#more">Read On »</a>
-          </div>
-        
+        <a id="more"></a>
+
+<h3 id="Frozen-tier现在是可用的"><a href="#Frozen-tier现在是可用的" class="headerlink" title="Frozen tier现在是可用的"></a>Frozen tier现在是可用的</h3><p>Frozen tier和部分挂载的索引（之前称为共享缓存可搜索快照）现在通常是可用的。</p>
+<p><em>Pending：什么是Frozen tier？</em></p>
+<h3 id="索引运行时字段"><a href="#索引运行时字段" class="headerlink" title="索引运行时字段"></a>索引运行时字段</h3><p>运行时字段可以使你在查询阶段根据其他字段和文档属性动态的创建字段。这些查询阶段的运行时字段在速度方面进行了灵活性优化，并且可以随时更改。ES7.13你也可以创建索引阶段的运行时字段，以便更好的提升查询性能。<a target="_blank" rel="noopener" href="https://www.elastic.co/guide/en/elasticsearch/reference/7.13/runtime-indexed.html">索引运行时字段</a></p>
+<h3 id="在CIDR范围内无痛匹配IPv4和IPv6地址"><a href="#在CIDR范围内无痛匹配IPv4和IPv6地址" class="headerlink" title="在CIDR范围内无痛匹配IPv4和IPv6地址"></a>在CIDR范围内无痛匹配IPv4和IPv6地址</h3><p>无痛表达式可以在CIDR范围内匹配IPv4和IPv6地址。这对于在安全中区分和分组IP地址或者监控用例时非常有用。这个特性在所有上下文中都可用，包活运行时字段，提取，搜索和聚合。举例来说：</p>
+<figure class="highlight java"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br></pre></td><td class="code"><pre><code class="hljs java">CIDR myCidrRange = <span class="hljs-keyword">new</span> CIDR(<span class="hljs-string">&#x27;10.1.1.0/25&#x27;</span>);<br>myCidrRange.contains(<span class="hljs-string">&#x27;10.1.1.127&#x27;</span>); <span class="hljs-comment">// true</span><br>myCidrRange.contains(<span class="hljs-string">&#x27;10.1.1.129&#x27;</span>); <span class="hljs-comment">// false</span><br><br>myCidrRange = <span class="hljs-keyword">new</span> CIDR(<span class="hljs-string">&#x27;2001:0db8:85a3::/64&#x27;</span>);<br>myCidrRange.contains(<span class="hljs-string">&#x27;2001:0db8:85a3:0000:0000:8a2e:0370:7334&#x27;</span>); <span class="hljs-comment">// true</span><br>myCidrRange.contains(<span class="hljs-string">&#x27;2001:0db8:85a3:0001:0000:8a2e:0370:7334&#x27;</span>); <span class="hljs-comment">// false</span><br></code></pre></td></tr></table></figure>
+
+
+<h3 id="新的查询类型combined-fields"><a href="#新的查询类型combined-fields" class="headerlink" title="新的查询类型combined_fields"></a>新的查询类型combined_fields</h3><p>7.13介绍了一种<strong>combined_fields</strong>查询，是一种搜索多个<em>text</em>字段作为联合字段的查询语句。你可以使用<em>combined_fields</em>查询作为多匹配查询跨字段类型选项的简单化替代。<a target="_blank" rel="noopener" href="https://www.elastic.co/guide/en/elasticsearch/reference/7.13/query-dsl-combined-fields-query.html">combined_fields查询文档</a></p>
+<h3 id="更快的terms聚合"><a href="#更快的terms聚合" class="headerlink" title="更快的terms聚合"></a>更快的<em>terms</em>聚合</h3><p>当满足以下条件时，会显著的提升<em>terms</em>聚合的速度：</p>
+<ul>
+<li>没有父或子的聚合</li>
+<li>目标索引不包括已经删除的索引的文档或者最近合并的文档</li>
+<li>不使用文档级别的安全性</li>
+<li>没有顶级查询</li>
+<li>某些字段有全局序数，例如<em>keyword</em>或者<em>IP</em>字段</li>
+<li>独立的terms个数少于一千个</li>
+</ul>
+<p>许多时间序列的用例可能满足这些标准，特别是对于冷数据或者frozen tier中的数据。</p>
+<h3 id="数据帧分析和推断可编辑"><a href="#数据帧分析和推断可编辑" class="headerlink" title="数据帧分析和推断可编辑"></a>数据帧分析和推断可编辑</h3><p>训练离群点检测、回归和分类模型，然后使用这些模型对输入数据进行推断的能力在7.13中变得普遍可用。</p>
+<h3 id="训练模型别名"><a href="#训练模型别名" class="headerlink" title="训练模型别名"></a>训练模型别名</h3><p>为了简化训练模型的部署和升级，7.13中引入了模型别名的概念。当在摄取管道中使用模型别名时，现在可以对基础引用模型进行更改，而不必更新管道。当新模型加载到缓存中时，所有摄取管道的基础引用模型将自动更改。</p>
+
       
     </div>
 </article>
@@ -179,12 +284,25 @@
     </header>
     <div>
       
-        <p>Elasticsearch是高可用并可以根据用户需求进行拓展的，原因是它的分布式特性。你可以向集群添加节点来提升集群能力然后ES会将你的数据和查询分布到所有可用节点上。你无需更改自己的应用，ES知道如何平衡多节点集群以提供高可用和可扩展性。节点越多，集群越强。</p>
-        
-          <div class="more-link">
-            <a href="/blog/2021/07/20/%E9%9B%86%E7%BE%A4%E8%8A%82%E7%82%B9%E4%B8%8E%E5%88%86%E7%89%87%E7%9A%84%E6%89%A9%E5%B1%95%E6%80%A7%E5%92%8C%E5%BC%B9%E6%80%A7/#more">Read On »</a>
-          </div>
-        
+        <a id="more"></a>
+
+<p>Elasticsearch是高可用并可以根据用户需求进行拓展的，原因是它的分布式特性。你可以向集群添加节点来提升集群能力然后ES会将你的数据和查询分布到所有可用节点上。你无需更改自己的应用，ES知道如何平衡多节点集群以提供高可用和可扩展性。节点越多，集群越强。</p>
+<p>高可用和可扩展是如何实现的呢？实际上，ES索引只是一个或多个物理分片的逻辑分组，其中每个分片实际上是一个自包含的索引。通过将一个索引中的文档分布到多个分片且将多个分片分布到多个节点上，ES保证了数据的冗余，这种机制防止硬件出错的情况并且可以在新的节点加入集群时提高查询能力。当一个集群节点增多或者缩减，ES会自动迁移分片并重新平衡集群。</p>
+<p>分片有两种类型：主分片和副本分片。一个索引中的每个文档都属于某一个主分片，副本分片是主分片的拷贝，这种复制机制提供数据的冗余副本以防止硬件故障，并提高服务读取请求如搜索或检索文档的容量。</p>
+<p>一个索引的主分片数量是固定的，在索引创建时指定，但是副本分片的数量在不会中断索引和查询操作的情况下可随意更改。</p>
+<h3 id="需要考虑的事情"><a href="#需要考虑的事情" class="headerlink" title="需要考虑的事情"></a>需要考虑的事情</h3><p>关于分片大小和为索引配置的主分片数量，有许多性能方面的考虑和权衡。分片越多，维护这些索引的开销就越大。分片大小越大，当ES需要重新平衡集群时移动分片花的时间就越久。</p>
+<p>查询大量的小分片可以使每个分片的处理速度更快，但是查询越多意味着开销越大，因此查询少量的大分片可能会更快。总之这要视情况而定。</p>
+<p>最开始的参考：</p>
+<ul>
+<li>尽量将分片大小控制在几GB到几十GB之间。对于基于时间的数据，通常情况下分片大小在20GB-40GB之间。</li>
+<li>避免分片过多问题。一个节点上的分片数量应该与其堆空间大小成比例，一般来说，每GB的堆空间对应的分片数量应该少于20个。</li>
+</ul>
+<p>决定这些配置最好的方式就是根据自己的使用场景进行测试。</p>
+<h3 id="故障发生情况"><a href="#故障发生情况" class="headerlink" title="故障发生情况"></a>故障发生情况</h3><p>出于性能考虑，在一个集群中的节点应该使用同一个网络。在不同的数据中心节点之间平衡集群中的分片花费的时间太长了，但是高可用架构要求你不能把所有鸡蛋放在一个篮子里。当一个位置发生重大故障时，另一个位置的服务器需要能够无缝接管服务。实现的方案就是跨集群复制<em>Cross-cluster replication</em>（CCR）</p>
+<p>CCR提供了一种从主集群自动同步索引到可作为热备份的辅助原创集群的方法。如果主集群挂了，辅助集群可以接管。你也可以使用CCR创建辅助集群以服务与用户地理位置相近的读请求。</p>
+<p>跨集群复制是主备复制。主集群上的索引是领导索引，负责处理所有写请求。辅助集群上的索引仅可以处理读请求。</p>
+<p><a target="_blank" rel="noopener" href="https://www.elastic.co/guide/en/elasticsearch/reference/current/scalability.html">原文</a></p>
+
       
     </div>
 </article>
@@ -262,13 +380,25 @@
     </header>
     <div>
       
-        <p>Elasticsearch（ES）是一种分布式文档存储。不同于关系型数据库存一行有关系的数据，ES存储被序列化成JSON的复杂数据结构。当你在集群中有多个ES节点时，文档也是被分布式存储的并且可以在任意一个节点立即查找到数据。</p>
+        <a id="more"></a>
+
+<p>Elasticsearch（ES）是一种分布式文档存储。不同于关系型数据库存一行有关系的数据，ES存储被序列化成JSON的复杂数据结构。当你在集群中有多个ES节点时，文档也是被分布式存储的并且可以在任意一个节点立即查找到数据。</p>
 <p>当一个文档被存储后，它会被索引并且可以被近实时（1秒内）查询到。ES使用到一种名叫倒排索引的数据结构，这种结构支持非常快速的全文查询。简单来说，倒排索引就是列出在所有文档中出现的单个单词，并且标记每个单词在所有文档中的出现情况。</p>
-        
-          <div class="more-link">
-            <a href="/blog/2021/07/19/%E6%96%87%E6%A1%A3%E5%92%8C%E7%B4%A2%E5%BC%95%E4%B8%AD%E7%9A%84%E6%95%B0%E6%8D%AE/#more">Read On »</a>
-          </div>
-        
+<p>一个索引可以被看作是被优化的文档集合，每个文档时一个字段集合，这个字段就是包含你的数据的key-value键值对。默认情况下，ES会将所有数据按照字段进行索引，每个被索引的字段都有专用的，被优化的数据结构。举例来说，text类型的字段存储在倒排索引中，而数字类型和地理类型的字段被存储在BKD Tree中。这种每种字段用合适的数据结构来组合并返回搜索结果的能力时ES快速检索文档的原因之一。</p>
+<p>ES也支持schema-less，这个的意思是文档可以被索引而不需要明确地指定如何处理文档中可能出现的字段。当启用动态mapping时，ES会自动检测并且为索引增加新的字段，这种默认的处理方式使得索引和检索文档变得容易 —— 只需要开始索引文档，ES会检测并用合适的数据类型来匹配文档中的booleans、float和integer值、date或string值。</p>
+<p>但是，你自己对数据的了解程度肯定要比ES多，所以你可以自定义规则来控制动态mapping或者明确定义mapping以便完全控制每个字段如何存储并索引。</p>
+<p>自定义mapping有如下优势：</p>
+<ul>
+<li>区分全文字符串（需要分词）和精确字符串（keyword）</li>
+<li>执行特定语言的文本分析</li>
+<li>为局部的搜索匹配优化字段类型</li>
+<li>使用用户自定义日期格式 </li>
+<li>使用一些相近的无法自动区分的数据结构，比如geo_point和geo_shape</li>
+</ul>
+<p>我们经常会用不同的方式索引同一个字段以便满足不同的需求。例如，你可能想把一个字符串索引为text类型用于全文检索，又想把该字段索引为keyword用于排序或者聚合。或者，你可能想用多种语言分析器来处理用户输入的字符串。</p>
+<p>在索引时用到的分析链在搜索过程中也会用到。当你查询一个全文索引字段时，在查询条目被找到之前查询文本会经历相同的分析。（也就是说，索引文档与查询文档的分析过程是一样的）</p>
+<p><a target="_blank" rel="noopener" href="https://www.elastic.co/guide/en/elasticsearch/reference/current/documents-indices.html">原文</a></p>
+
       
     </div>
 </article>
@@ -304,12 +434,22 @@
     </header>
     <div>
       
-        <p>Elasticsearch是Elastic栈的中心，是一个分布式搜索与分析引擎。Logstash和Beat使向Elasticsearch中收集、聚合、丰富数据并且存储变得容易。Kibana可以让人们交互式的探索、可视化、分享数据的探索角度并且可以管理和监控Elastic栈。Elasticsearch则用于处理数据索引、搜索、分析。</p>
-        
-          <div class="more-link">
-            <a href="/blog/2021/07/19/%E4%BB%80%E4%B9%88%E6%98%AFElasticsearch/#more">Read On »</a>
-          </div>
-        
+        <a id="more"></a>
+
+<p>Elasticsearch是Elastic栈的中心，是一个分布式搜索与分析引擎。Logstash和Beat使向Elasticsearch中收集、聚合、丰富数据并且存储变得容易。Kibana可以让人们交互式的探索、可视化、分享数据的探索角度并且可以管理和监控Elastic栈。Elasticsearch则用于处理数据索引、搜索、分析。</p>
+<p>Elasticsearch对所有类型的数据都提供了近实时的查询与分析。不论你的数据是结构化或者非结构化、数字类型的还是地理数据，Elasticsearch都可以高效存储并且用支持快速查询的方式来索引数据。你可以随意的进行数据提取和信息聚合以便发现数据中的某些趋势和模式。随着数据体积的增大，Elasticsearch的分布式特性可以让用户无缝扩展集群。</p>
+<p>虽然不是所有问题都是有关搜索的问题，Elasticsearch提供了快速与灵活的方式去处理数据，以下是一些用户场景的大致分类：</p>
+<ul>
+<li>在APP或者网站上添加一个搜索框</li>
+<li>保存并分析日志，指标和安全事件数据</li>
+<li>使用机器学习来实时对数据行为进行建模</li>
+<li>利用Elasticsearch作为存储引擎使业务工作流自动化</li>
+<li>使用Elasticsearch作为一个地理信息系统来管理、集成和分析空间数据</li>
+<li>使用Elasticsearch作为一个生物信息的搜索工具来存储并处理基因数据</li>
+</ul>
+<p>我们对用户使用Elasticsearch进行一些新奇的搜索方式感到惊讶，但是不论你的使用场景是否与上述提到的场景有相似的地方，或者你用Elasticsearch解决一个新问题，你用Elasticsearch处理数据、文档和索引的方式总是相同的。</p>
+<p><a target="_blank" rel="noopener" href="https://www.elastic.co/guide/en/elasticsearch/reference/current/elasticsearch-intro.html">原文</a></p>
+
       
     </div>
 </article>

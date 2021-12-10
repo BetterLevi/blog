@@ -59,9 +59,9 @@
     </header>
 
     <section>
-      <p><a target="_blank" rel="noopener" href="https://aws.amazon.com/cn/big-data/what-is-presto/">转载</a> Presto介绍</p>
-<a id="more"></a>
+      <a id="more"></a>
 
+<p><a target="_blank" rel="noopener" href="https://aws.amazon.com/cn/big-data/what-is-presto/">转载</a> </p>
 <h3 id="什么是Presto"><a href="#什么是Presto" class="headerlink" title="什么是Presto"></a>什么是Presto</h3><p>Presto（或 PrestoDB）是一种开源的分布式 SQL 查询引擎，从头开始设计用于针对任何规模的数据进行快速分析查询。它既可支持非关系数据源，例如 Hadoop 分布式文件系统 (HDFS)、<a target="_blank" rel="noopener" href="https://aws.amazon.com/s3/">Amazon S3</a>、Cassandra、MongoDB 和 <a target="_blank" rel="noopener" href="https://aws.amazon.com/emr/details/hbase/">HBase</a>，又可支持关系数据源，例如 MySQL、PostgreSQL、<a target="_blank" rel="noopener" href="https://aws.amazon.com/redshift/">Amazon Redshift</a>、Microsoft SQL Server 和 Teradata。</p>
 <p>Presto 可在数据的存储位置查询数据，无需将数据移动到独立的分析系统。查询执行可在纯粹基于内存的架构上平行运行，大多数结果在几秒内即可返回。您将会发现，它已被许多知名公司采用，例如 <a target="_blank" rel="noopener" href="https://code.facebook.com/projects/552007124892407/presto/">Facebook</a>、<a target="_blank" rel="noopener" href="https://medium.com/airbnb-engineering/airpal-a-web-based-query-execution-tool-for-data-analysis-33c43265ed1f">Airbnb</a>、<a target="_blank" rel="noopener" href="https://medium.com/netflix-techblog/using-presto-in-our-big-data-platform-on-aws-938035909fd4">Netflix</a>、<a target="_blank" rel="noopener" href="https://www.youtube.com/watch?v=0vdW1ORLWyk&feature=youtu.be&t=20m58s">Atlassian</a> 和 <a target="_blank" rel="noopener" href="https://www.youtube.com/watch?v=LuHxnOQarXU&feature=youtu.be&t=25m13s">Nasdaq</a>。</p>
 <h3 id="Presto的发展"><a href="#Presto的发展" class="headerlink" title="Presto的发展"></a>Presto的发展</h3><p>Presto 最初作为 <a target="_blank" rel="noopener" href="https://code.facebook.com/projects/552007124892407/presto/">Facebook</a> 的项目启动，针对 300PB 的数据仓库运行交互式分析查询，使用大型基于 Hadoop/HDFS 的集群构建。在构建 Presto 之前，Facebook 使用的是 2008 年创建并推出的 Apache Hive，为 Hadoop 生态系统带来熟悉的 SQL 语法。Hive 在将复杂的 Java MapReduce 作业简化成类似 SQL 的查询方面对 Hadoop 生态系统有着重大影响，同时还能够执行大规模的任务。但是，它未针对交互式查询所需的高速性能进行优化。</p>

@@ -59,8 +59,7 @@
     </header>
 
     <section>
-      <p>ES近实时搜索与Translog介绍。</p>
-<a id="more"></a>
+      <a id="more"></a>
 
 <p>Elasticsearch基于Lucene，Lucene搜索是按segment进行的，每一个segment本身就是一个倒排索引，一个Lucene倒排索引包含segment集合和一个提交点（是一个列出了所有已知segment的文件）。新的文档首先被添加到内存的lucene索引缓存中，然后写入到一个基于磁盘的segment，在一次提交后，一个新的segment被添加到提交点并且清空缓存。</p>
 <blockquote>

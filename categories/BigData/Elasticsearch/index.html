@@ -92,12 +92,67 @@
     </header>
     <div>
       
-        <p>ES近实时搜索与Translog介绍。</p>
-        
-          <div class="more-link">
-            <a href="/blog/2021/07/26/Elasticsearch%E8%BF%91%E5%AE%9E%E6%97%B6%E6%90%9C%E7%B4%A2%E4%B8%8ETranslog/#more">Read On »</a>
-          </div>
-        
+        <a id="more"></a>
+
+<p>Elasticsearch基于Lucene，Lucene搜索是按segment进行的，每一个segment本身就是一个倒排索引，一个Lucene倒排索引包含segment集合和一个提交点（是一个列出了所有已知segment的文件）。新的文档首先被添加到内存的lucene索引缓存中，然后写入到一个基于磁盘的segment，在一次提交后，一个新的segment被添加到提交点并且清空缓存。</p>
+<blockquote>
+<p>一个Lucene索引在ES中就是一个分片，一个ES索引是分片的集合，即一个ES索引是Lucene索引的集合。当ES在ES索引中搜索的时候，它发送查询到每一个属于ES索引的分片（Lucene 索引）上，然后执行分布式检索，合并每个分片的结果到一个全局结果集</p>
+</blockquote>
+<p>（以下提到的索引都是ES索引，Lucene索引表示为segment）</p>
+<p><strong>逐段搜索流程</strong>：</p>
+<ol>
+<li>新的文档被搜集到内存索引缓存中</li>
+<li>缓存不定时进行提交commit，执行以下操作：<ul>
+<li>一个追加了索引的新的segment被写入到磁盘</li>
+<li>追加了新的segment名字的提交点被写入磁盘</li>
+<li>磁盘进行同步，将所有在文件系统缓存中等待的写入都刷新到磁盘</li>
+</ul>
+</li>
+<li>开启一个新的segment，其包含的文档可以被搜索</li>
+<li>内存缓存被清空，等待接收新的文档</li>
+</ol>
+<p><strong>删除和更新</strong>：</p>
+<p>segment是不可改变的，既不能把文档从旧的segment中删除，也无法通过修改旧的segment来反应文档的更新。每个提交点会包含一个*.del*文件来记录被删除文档的信息。</p>
+<p>当一个文档被删除时，实际上只是在*.del*文件中被标记，被标记删除的文档仍然可以被查询匹配到，但是会在最终返回结果前从结果集中移除。</p>
+<p>当一个文档被更新时，旧的文档被标记删除，新的文档被索引到一个新的segment中。查询时两者都会被查到但是旧的文档会在结果返回前被移除。</p>
+<h4 id="近实时搜索"><a href="#近实时搜索" class="headerlink" title="近实时搜索"></a>近实时搜索</h4><p>提交commit一个新的segment到磁盘需要一次同步fsync操作来确保segment被持久化到磁盘上，这样在节点挂了时不会丢失数据。但是fsync操作代价很大，如果每次索引一个文档都去执行一次的话会有很大的性能问题。</p>
+<p>通过在提交前，将缓存中的内容写入到一个内存segment中，使这些还没有被提交的文档可以被搜索，然后清空缓存等待新的文档。Lucene允许新的segment被写入和打开使其包含的文档在没有进行一次完整的提交时便对搜索可见。这种方式比进行一次提交代价要小得多，并且在不影响性能的前提下可以被频繁的执行。</p>
+<p>通过refresh操作来写入和打开一个新的segment。默认情况下每个分片会每秒自动刷新一次，即文档的变化并不是立即对搜索可见而是在一秒后变为可见，这就是ES近实时搜索的原因。</p>
+<h4 id="Translog"><a href="#Translog" class="headerlink" title="Translog"></a>Translog</h4><p>上述过程中提到的内存segment用于在提交之前使文档可以被搜索，但是在提交之前如果节点挂掉，那么这部分数据就会丢失。所以ES增加一个transaction log，即translog来记录ES的每一次操作：</p>
+<ol>
+<li>一个文档被索引后被添加到内存缓冲区，将操作日志记录到translog</li>
+<li>通过refresh操作时内存中文档被刷新到一个新的内存segment中，清空缓存但是保留translog。这个内存segment时被打开的使其包含的文档可以被搜索</li>
+<li>不断重复这个过程，更多文档添加到内存缓冲区并追加到translog中，并在一秒后refresh到内存segment中</li>
+<li>随着translog变得越来越大，到达某个界限后执行flush操作：执行一次全量提交commit，创建一个新的translog：<ul>
+<li>所有在内存缓冲区中的文档都被写入一个新的segment中，即持久化到磁盘上，即内存segment转为物理segment</li>
+<li>缓冲区被清空</li>
+<li>新的提交点被写入磁盘</li>
+<li>文件系统缓存通过fsync被flush</li>
+<li>删除旧的translog</li>
+</ul>
+</li>
+</ol>
+<p>translog提供所有还没有被刷新到磁盘的操作的持久化记录，当ES启动时，它会从磁盘中使用最后一个提交点去恢复已知的segment，并且重新执行translog中所有在最后一次提交后发生的变更操作。</p>
+<p>translog也被用来提供实时的CURD。当你尝试通过ID查询，更新，删除一个文档，它会尝试在从相应的segment检索之前，首先检查translog中最近所有的变更，这意味着总是可以获取到文档的最新版本。</p>
+<h4 id="flush操作"><a href="#flush操作" class="headerlink" title="flush操作"></a>flush操作</h4><p>一次flush操作是指执行一个提交commit且截断translog。分片每30分钟会自动flush，或者在translog太大时进行flush，这些阈值可以进行配置。</p>
+<h4 id="segment合并"><a href="#segment合并" class="headerlink" title="segment合并"></a>segment合并</h4><p>由于自动刷新流程每秒会创建一个新的段 ，这样会导致短时间内的段数量暴增。而段数目太多会带来较大的麻烦。 每一个段都会消耗文件句柄、内存和cpu运行周期。更重要的是，每个搜索请求都必须轮流检查每个段；所以段越多，搜索也就越慢。</p>
+<p>Elasticsearch通过在后台进行段合并来解决这个问题。小的段被合并到大的段，然后这些大的段再被合并到更大的段。</p>
+<p>段合并的时候会将那些旧的已删除文档从文件系统中清除。被删除的文档（或被更新文档的旧版本）不会被拷贝到新的大段中。</p>
+<p>合并流程：</p>
+<ol>
+<li>当索引的时候，refresh操作会创建新的segment并将其打开以便搜索</li>
+<li>合并进程选择一小部分大小相似的段，在后台将它们合并到更大的段中。这个过程不会中断索引和搜索</li>
+<li>合并结束，删除老的segment<ul>
+<li>新的segment被flush到了磁盘</li>
+<li>写入一个包含新的segment且排除旧的和被合并的segment的新提交点</li>
+<li>新的segment被打开供搜索</li>
+<li>旧的segment被删除</li>
+</ul>
+</li>
+</ol>
+<p><a target="_blank" rel="noopener" href="https://www.elastic.co/guide/cn/elasticsearch/guide/current/indexing-performance.html#segments-and-merging">合并设置</a></p>
+<p><a target="_blank" rel="noopener" href="https://www.elastic.co/guide/cn/elasticsearch/guide/current/near-real-time.html">原文</a></p>
+
       
     </div>
 </article>
@@ -137,12 +192,17 @@
     </header>
     <div>
       
-        <p>ES主节点选举策略。</p>
-        
-          <div class="more-link">
-            <a href="/blog/2021/07/23/Elasticsearch%E5%9F%BA%E4%BA%8E%E4%BB%B2%E8%A3%81%E7%9A%84%E9%80%89%E4%B8%BE%E7%AD%96%E7%95%A5/#more">Read On »</a>
-          </div>
-        
+        <a id="more"></a>
+
+<p>选举主节点和改变集群状态是两个最根本的任务因为所有正常的主节点必须一起正常工作。即使在某些节点挂了时维持这些工作的稳定是非常重要的。ES通过考虑每个动作都收到仲裁节点成功的响应来实现健壮性，仲裁节点是集群中可用主节点的子集。使用一个子集响应的优点是，即使某些节点挂了也不会阻止集群继续执行任务。仲裁节点需要谨慎选取以防集群<em>脑裂</em>，就是说集群被分成了两部分并且每一部分可能做出一些与另一部分不一致的决定。</p>
+<p>ES允许你可以在正在运行的集群中增加或者删除节点，大多情况下，只需要简单的启动或者关闭节点即可。</p>
+<p>在添加或者删除节点时，ES通过更新集群的投票配置来维护最佳容错级别，投票配置时一组符合符合主节点条件的节点，在做出选择新主节点或者提交新集群状态等决策时，它们的响应会被进行统计。当收到投票配置中半数以上节点的响应时会做出决定。通常来说投票配置中的节点集合与当前集群中所有符合主节点的节点集合保持一致，但在某些情况下会有所不同。</p>
+<p>为了确保集群可用，千万不要在同一时间关闭投票配置中半数以上的节点。只要半数以上的投票节点正常工作，集群就会正常工作。比如一个集群中有三个或四个符合主节点条件的节点，集群可以忍受其中一个节点挂掉。如果仅有两个或者一个符合主节点的节点，它们必须全都可用。</p>
+<p>在一个节点加入或者离开集群之后，被选举的主节点必须报告集群状态来更新投票配置中的节点，这个过程在很短时间内完成。在从集群中移除更多节点之前等投票配置更新完成是很重要的。</p>
+<h4 id="主节点选举"><a href="#主节点选举" class="headerlink" title="主节点选举"></a>主节点选举</h4><p>不论在启动或者现有的被选举的主节点失败时，ES都是用一个选择进程来同意一个被选择的节点。任何符合主节点条件的节点都可以开始选举，通常第一次选举就会成功。只有当两个节点碰巧同时开始选举时，选举才会失败，所以每个节点上的选择都是随机时间触发的，以减少这种情况发生的概率。在选出主节点之前节点将重试选举，并在失败时退出，这样保证选举最终会成功。主节点选举的触发事件是可以配置的。</p>
+<h4 id="集群维护，滚动重启和维护"><a href="#集群维护，滚动重启和维护" class="headerlink" title="集群维护，滚动重启和维护"></a>集群维护，滚动重启和维护</h4><p>需要集群维护任务会涉及到一个或多个节点的暂时下线然后重新上线。默认情况下，如果集群中的一个符合主节点的节点下线，集群依然可用，比如滚动重启。另外，如果多个节点先停掉然后又启动，那么集群会自动回复，比如在整个集群重启阶段。这些情况都无需额外的操作，因为主节点集合不是永久不变的。</p>
+<p><a target="_blank" rel="noopener" href="https://www.elastic.co/guide/en/elasticsearch/reference/current/modules-discovery-quorums.html">原文</a></p>
+
       
     </div>
 </article>
@@ -182,12 +242,18 @@
     </header>
     <div>
       
-        <p>ES集群节点发现。</p>
-        
-          <div class="more-link">
-            <a href="/blog/2021/07/22/ES%E9%9B%86%E7%BE%A4%E8%8A%82%E7%82%B9%E5%8F%91%E7%8E%B0/#more">Read On »</a>
-          </div>
-        
+        <a id="more"></a>
+
+<p>节点发现是ES集群formation模块找到其他节点形成集群的过程。当你启动一个ES节点或者一个节点认为主节点挂了并开始选择新的主节点时运行节点发现任务。</p>
+<p>节点发现开始时会获取来自一个或多个<strong>种子主机提供者</strong>的种子地址，还有最后已知集群中所有可以称为主节点的地址。这个过程分为两个阶段进行：一，集群中的每个节点通过连接每个种子地址来尝试验证种子地址所连接的节点并判断该节点是否可以成为主节点；二，验证成功后，节点会向远程节点分享可以成为主节点的节点列表，远程节点再依次告知与它同级的节点。节点继续探索在此过程中发现的新节点然后告诉它的同级节点，以此类推。</p>
+<p>如果一个节点不是可用主节点，它会继续进行节点发现直到获取到一个被选举成功的主节点。如果还是没有找到主节点，则会在一段时间后进行重试，默认为1s。</p>
+<h4 id="种子主机提供者"><a href="#种子主机提供者" class="headerlink" title="种子主机提供者"></a>种子主机提供者</h4><p>默认情况下，集群formation模块提供了两种种子主机提供者来配置种子节点：基于设置和基于文件的种子主机提供者。通过插件可以扩展到云服务或者其他形式的种子服务提供者。选择哪种提供者可以通过<em>discovery.seed_providers</em>设置来指定，默认为基于设置的提供方式。这个设置支持提供者列表，允许你的服务中使用多种提供者来提供种子地址。</p>
+<p>每个种子主机提供者会提供种子节点的IP地址或者服务器名称。如果提供服务器名称则会由DNS服务解析为IP地址。如果一个服务器地址被解析为多个IP地址，则ES会尝试在这些地址中发现所有的种子节点。如果TCP端口没有指定，则使用<em>transport.profiles.default.port</em>的值，如果这个值也没有设置，则使用<em>transport.port</em>。DNS探索并发数默认为10，超时时间默认为5s。</p>
+<h5 id="基于设置的种子主机提供者"><a href="#基于设置的种子主机提供者" class="headerlink" title="基于设置的种子主机提供者"></a>基于设置的种子主机提供者</h5><p>基于设置的种子主机提供者会在设置中静态的配置一些种子服务地址，地址是IP或者服务器名称，在进行节点发现是服务器名称会被解析为IP地址。</p>
+<figure class="highlight java"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br></pre></td><td class="code"><pre><code class="hljs java">discovery.seed_hosts:<br>   - <span class="hljs-number">192.168</span><span class="hljs-number">.1</span><span class="hljs-number">.10</span>:<span class="hljs-number">9300</span><br>   - <span class="hljs-number">192.168</span><span class="hljs-number">.1</span><span class="hljs-number">.11</span> <br>   - seeds.mydomain.com <br></code></pre></td></tr></table></figure>
+<h5 id="基于文件的种子主机提供者"><a href="#基于文件的种子主机提供者" class="headerlink" title="基于文件的种子主机提供者"></a>基于文件的种子主机提供者</h5><p>这种方式利用一个外部文件来配置种子主机。当这个文件发生变化时ES会重新加载，所以无需重新启动每个节点就可以动态更新种子地址。例如，这为在Docker中运行的ES实例提供了一种方便的机制，可以在节点启动不知道种子IP地址时动态的提供需要连接的种子IP地址。</p>
+<p>还有一些其他提供者如：EC2 host provider，Azure Classic host provider， Google Computer Engine host provider。</p>
+
       
     </div>
 </article>

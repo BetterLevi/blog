@@ -59,8 +59,7 @@
     </header>
 
     <section>
-      <p>Hdfs架构，数据读写过程解析。</p>
-<a id="more"></a>
+      <a id="more"></a>
 
 <h3 id="Hdfs中数据块block的设计"><a href="#Hdfs中数据块block的设计" class="headerlink" title="Hdfs中数据块block的设计"></a>Hdfs中数据块block的设计</h3><h4 id="block大小设置"><a href="#block大小设置" class="headerlink" title="block大小设置"></a>block大小设置</h4><p> Hdfs中的文件在物理上以块block的形式存储，块的大小可以通过参数进行配置(dfs.blocksize)，hadoop2.x版本中默认块大小为128M，之前版本为64M。</p>
 <p>block大小设置的原则是最小化寻址开销，减少网络传输。</p>
