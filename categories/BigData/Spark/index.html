@@ -96,7 +96,7 @@
     </header>
     <div>
       
-        <p>在分布式环境中，数据合理分布是提高性能的关键因素。在SparkSQL的DataFrame API中有一个*repartition()*函数用于控制数据在Spark集群上分布。然而高效地使用这个函数并不容易因为改变数据分布就意味着集群节点间物理数据移动（即Shuffle）的损耗。</p>
+        <p>Spark Repartition介绍</p>
         
           <div class="more-link">
             <a href="/blog/2021/09/08/Spark%E9%87%8D%E6%96%B0%E5%88%86%E5%8C%BARepartition/#more">Read On »</a>
@@ -141,12 +141,7 @@
     </header>
     <div>
       
-        <h3 id="Spark特点"><a href="#Spark特点" class="headerlink" title="Spark特点"></a>Spark特点</h3><ol>
-<li>快：与Hadoop的MapReduce相比，Spark基于内存的运算要快100倍以上，基于硬盘的运算也要快10倍以上，Spark实现了高效的DAG执行引擎，可以基于内存来高效处理数据流</li>
-<li>易用：Spark支持Java，Python，R，Scala的API，还支持超过80种高级算法，使用户可以快速构建不同的应用。也支持交互式的python和scala的shell，可以很方便的在shell中使用spark来验证解决问题的方法</li>
-<li>通用：spark提供了统一的解决方案。Spark可以用于批处理，交互式查询Spark SQL，实时流处理Spark Streaming，机器学习MLlib和图计算GraphX。</li>
-<li>兼容性：Spark可以很方便的与其他开源产品进行融合。Spark可以使用Hadoop 的YARN和Apache     Mesos作为它的资源管理和调度器，并且可以处理所有Hadoop支持的数据，包括HDFS，HBase和Cassandra等。Spark也可以不依赖于第三方的资源管理和调度器，它实现了Standalone作为其内置的资源管理和调度框架，降低了Spark的使用门槛。</li>
-</ol>
+        <p>Spark知识点总结</p>
         
           <div class="more-link">
             <a href="/blog/2021/09/06/Spark%E7%9B%B8%E5%85%B3%E7%9F%A5%E8%AF%86/#more">Read On »</a>

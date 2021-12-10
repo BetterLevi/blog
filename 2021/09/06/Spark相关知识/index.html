@@ -59,14 +59,15 @@
     </header>
 
     <section>
-      <h3 id="Spark特点"><a href="#Spark特点" class="headerlink" title="Spark特点"></a>Spark特点</h3><ol>
+      <p>Spark知识点总结</p>
+<a id="more"></a>
+
+<h3 id="Spark特点"><a href="#Spark特点" class="headerlink" title="Spark特点"></a>Spark特点</h3><ol>
 <li>快：与Hadoop的MapReduce相比，Spark基于内存的运算要快100倍以上，基于硬盘的运算也要快10倍以上，Spark实现了高效的DAG执行引擎，可以基于内存来高效处理数据流</li>
 <li>易用：Spark支持Java，Python，R，Scala的API，还支持超过80种高级算法，使用户可以快速构建不同的应用。也支持交互式的python和scala的shell，可以很方便的在shell中使用spark来验证解决问题的方法</li>
 <li>通用：spark提供了统一的解决方案。Spark可以用于批处理，交互式查询Spark SQL，实时流处理Spark Streaming，机器学习MLlib和图计算GraphX。</li>
 <li>兼容性：Spark可以很方便的与其他开源产品进行融合。Spark可以使用Hadoop 的YARN和Apache     Mesos作为它的资源管理和调度器，并且可以处理所有Hadoop支持的数据，包括HDFS，HBase和Cassandra等。Spark也可以不依赖于第三方的资源管理和调度器，它实现了Standalone作为其内置的资源管理和调度框架，降低了Spark的使用门槛。</li>
 </ol>
-<a id="more"></a>
-
 <h3 id="RDD知识点"><a href="#RDD知识点" class="headerlink" title="RDD知识点"></a>RDD知识点</h3><ol>
 <li>RDD不实际存储真正要计算的数据，而是记录了数据的位置在哪里，数据的转换关系（调用了什么方法，传入了什么函数）</li>
 <li>RDD中的所有转换都是惰性求值/延迟执行的，也就是说不会直接计算，只有当发生一个要求返回结果给Driver的Action时，这些转换才会真正运行。</li>
