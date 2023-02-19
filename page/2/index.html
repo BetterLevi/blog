@@ -60,6 +60,51 @@
     <header class="title">
       
         <h1>
+          <a href="/blog/2021/07/22/ES%E9%9B%86%E7%BE%A4%E8%8A%82%E7%82%B9%E5%8F%91%E7%8E%B0/">Elasticsearch集群节点发现</a>
+        </h1>
+      
+      <div class='ListMeta'>
+  <time datetime="2021-07-22T09:35:45.000Z" itemprop="datePublished">
+    2021-07-22
+  </time>
+  
+  
+  / 
+  <ul>
+    
+  <li class="meta-text">
+  { <a href="/blog/categories/BigData/">BigData</a> }
+  </li>
+
+  <li class="meta-text">
+  { <a href="/blog/categories/BigData/Elasticsearch/">Elasticsearch</a> }
+  </li>
+
+
+  </ul>
+  
+</div>
+
+    </header>
+    <div>
+      
+        <p>节点发现是ES集群formation模块找到其他节点形成集群的过程。当你启动一个ES节点或者一个节点认为主节点挂了并开始选择新的主节点时运行节点发现任务。</p>
+        
+          <div class="more-link">
+            <a href="/blog/2021/07/22/ES%E9%9B%86%E7%BE%A4%E8%8A%82%E7%82%B9%E5%8F%91%E7%8E%B0/#more">Read On »</a>
+          </div>
+        
+      
+    </div>
+</article>
+
+    </li>
+  
+    <li>
+      <article class='ListView'>
+    <header class="title">
+      
+        <h1>
           <a href="/blog/2021/07/21/%E9%9B%86%E7%BE%A4%E5%88%86%E7%89%87%E5%88%86%E9%85%8D%E5%92%8C%E8%B7%AF%E7%94%B1%E8%AE%BE%E7%BD%AE/">ES集群分片分配和路由设置</a>
         </h1>
       
@@ -377,49 +422,6 @@
         
           <div class="more-link">
             <a href="/blog/2021/07/02/%E9%AB%98%E6%80%A7%E8%83%BDMysql/#more">Read On »</a>
-          </div>
-        
-      
-    </div>
-</article>
-
-    </li>
-  
-    <li>
-      <article class='ListView'>
-    <header class="title">
-      
-        <h1>
-          <a href="/blog/2021/06/27/%E5%B9%BF%E5%BA%A6%E4%BC%98%E5%85%88%E6%90%9C%E7%B4%A2%E7%AE%97%E6%B3%95/">广度优先搜索算法</a>
-        </h1>
-      
-      <div class='ListMeta'>
-  <time datetime="2021-06-27T07:32:43.000Z" itemprop="datePublished">
-    2021-06-27
-  </time>
-  
-  
-  / 
-  <ul>
-    
-  <li class="meta-text">
-  { <a href="/blog/categories/Algorithm/">Algorithm</a> }
-  </li>
-
-
-  </ul>
-  
-</div>
-
-    </header>
-    <div>
-      
-        <h3 id="介绍"><a href="#介绍" class="headerlink" title="介绍"></a>介绍</h3><p>广度优先算法按照一种同心圆的方式，首先访问所有和初始顶点邻接的顶点，然后访问与邻接节点邻接的所有未访问到的节点，以此类推，直到所有与初始顶点同在一个连通分量中的顶点都访问过了为止。如果图中仍然存在未被访问的节点，该算法必须从图的其他连通分量中的任意顶点重新开始。</p>
-<p>使用<strong>队列</strong>来跟踪广度优先搜索的操作是比较方便的，该队列先从遍历的初始顶点开始，将该顶点标记为已访问。在每次迭代的时候，该算法找出所有和队头顶点邻接的未访问节点，并将它们标记为已访问，再把它们入队，然后将队头节点从队列中移除(因为该节点所有可能的下一步已经在队列中，该节点被pass)。</p>
-<p>上述介绍比较难懂，广度优先算法致力于解决的问题可以概括为：在一个图中已知起点与终点，求从起点出发到终点的最短路径。起点即初始节点，终点为目标节点，从初始节点出发开始广度优先遍历搜索，第一次到达目标节点时走过的路径即位最短路径。</p>
-        
-          <div class="more-link">
-            <a href="/blog/2021/06/27/%E5%B9%BF%E5%BA%A6%E4%BC%98%E5%85%88%E6%90%9C%E7%B4%A2%E7%AE%97%E6%B3%95/#more">Read On »</a>
           </div>
         
       
