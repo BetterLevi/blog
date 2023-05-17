@@ -60,6 +60,51 @@
     <header class="title">
       
         <h1>
+          <a href="/blog/2021/07/23/Elasticsearch%E5%9F%BA%E4%BA%8E%E4%BB%B2%E8%A3%81%E7%9A%84%E9%80%89%E4%B8%BE%E7%AD%96%E7%95%A5/">Elasticsearch基于仲裁的选举策略</a>
+        </h1>
+      
+      <div class='ListMeta'>
+  <time datetime="2021-07-23T02:52:46.000Z" itemprop="datePublished">
+    2021-07-23
+  </time>
+  
+  
+  / 
+  <ul>
+    
+  <li class="meta-text">
+  { <a href="/blog/categories/BigData/">BigData</a> }
+  </li>
+
+  <li class="meta-text">
+  { <a href="/blog/categories/BigData/Elasticsearch/">Elasticsearch</a> }
+  </li>
+
+
+  </ul>
+  
+</div>
+
+    </header>
+    <div>
+      
+        <p>选举主节点和改变集群状态是两个最根本的任务因为所有正常的主节点必须一起正常工作。即使在某些节点挂了时维持这些工作的稳定是非常重要的。ES通过考虑每个动作都收到仲裁节点成功的响应来实现健壮性，仲裁节点是集群中可用主节点的子集。使用一个子集响应的优点是，即使某些节点挂了也不会阻止集群继续执行任务。仲裁节点需要谨慎选取以防集群<em>脑裂</em>，就是说集群被分成了两部分并且每一部分可能做出一些与另一部分不一致的决定。</p>
+        
+          <div class="more-link">
+            <a href="/blog/2021/07/23/Elasticsearch%E5%9F%BA%E4%BA%8E%E4%BB%B2%E8%A3%81%E7%9A%84%E9%80%89%E4%B8%BE%E7%AD%96%E7%95%A5/#more">Read On »</a>
+          </div>
+        
+      
+    </div>
+</article>
+
+    </li>
+  
+    <li>
+      <article class='ListView'>
+    <header class="title">
+      
+        <h1>
           <a href="/blog/2021/07/22/ES%E9%9B%86%E7%BE%A4%E8%8A%82%E7%82%B9%E5%8F%91%E7%8E%B0/">Elasticsearch集群节点发现</a>
         </h1>
       
@@ -381,47 +426,6 @@
         
           <div class="more-link">
             <a href="/blog/2021/07/17/%E4%BB%80%E4%B9%88%E6%98%AFHive/#more">Read On »</a>
-          </div>
-        
-      
-    </div>
-</article>
-
-    </li>
-  
-    <li>
-      <article class='ListView'>
-    <header class="title">
-      
-        <h1>
-          <a href="/blog/2021/07/02/%E9%AB%98%E6%80%A7%E8%83%BDMysql/">高性能Mysql</a>
-        </h1>
-      
-      <div class='ListMeta'>
-  <time datetime="2021-07-02T12:01:36.000Z" itemprop="datePublished">
-    2021-07-02
-  </time>
-  
-  
-  / 
-  <ul>
-    
-  <li class="meta-text">
-  { <a href="/blog/categories/Note/">Note</a> }
-  </li>
-
-
-  </ul>
-  
-</div>
-
-    </header>
-    <div>
-      
-        <p>高性能Mysql知识点</p>
-        
-          <div class="more-link">
-            <a href="/blog/2021/07/02/%E9%AB%98%E6%80%A7%E8%83%BDMysql/#more">Read On »</a>
           </div>
         
       

@@ -1,0 +1,166 @@
+<!DOCTYPE html>
+<html lang="zh-cmn-Hans">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <meta http-equiv="X-UA-Compatible" content="ie=edge">
+  <title>Redission分布式锁源码简析 | Why So Serious?</title>
+  
+    <link rel="icon" href="/blog/assets/smile.JPG">
+  
+  
+  
+  <!--link rel="stylesheet" href="//cdn.jsdelivr.net/highlight.js/9.10.0/styles/github-gist.min.css"-->
+  
+<link rel="stylesheet" href="//cdn.jsdelivr.net/highlight.js/9.10.0/styles/github-gist.min.css">
+
+  
+<link rel="stylesheet" href="/blog/css/style.css">
+
+<meta name="generator" content="Hexo 5.3.0"></head>
+
+<body>
+<div class="Shell">
+    <aside class='SideBar'>
+    <section class='avatar' style="background-image: url(/blog/assets/header.png)">
+        <div class='av-pic' style="background-image: url(/blog/assets/avatar.jpg)">
+        </div>
+    </section>
+    <section class='menu'>
+        <div>Why So Serious?</div>
+        
+        <ul>
+          
+            <a href="/blog/" class="Btn">
+              <li>Home</li>
+            </a>  
+          
+            <a href="/blog/categories/" class="Btn">
+              <li>Categories</li>
+            </a>  
+          
+            <a href="/blog/about/" class="Btn">
+              <li>About</li>
+            </a>  
+          
+        </ul>
+    </section>
+    <section class="media">
+        
+    </section>
+</aside>
+
+    <div class="container">
+        <div data-pager-shell>
+            <div>
+  <article class='ContentView'>
+    <header class='PageTitle'>
+        <h1>Redission分布式锁源码简析</h1>
+    </header>
+
+    <section>
+      <p>Redission获取分布式锁的源码简析</p>
+<a id="more"></a>
+
+<h2 id="Redission介绍"><a href="#Redission介绍" class="headerlink" title="Redission介绍"></a>Redission介绍</h2><p>Redission是一个Java与Redis交互的工具库，与我们常用的StringRedisTemplate类似，但是它们有不同的特点和使用方式</p>
+<h3 id="RedisClient"><a href="#RedisClient" class="headerlink" title="RedisClient"></a>RedisClient</h3><ol>
+<li>基于Redis协议的Java Redis客户端</li>
+<li>提供多种分布式的操作与API，支持分布式对象，分布式锁，分布式集合等</li>
+<li>可扩展性和灵活性很高，可以用来构建复杂的分布式应用<h3 id="StringRedisTemplate"><a href="#StringRedisTemplate" class="headerlink" title="StringRedisTemplate"></a>StringRedisTemplate</h3></li>
+<li>基于Jedis或者Lettuce等连接池技术封装的Redis客户端</li>
+<li>简化了Redis中字符串类型数据的操作，提供了一系列的方法来实现对字符串的读写等操作</li>
+<li>基于模板方法的编程模式，将Redis操作封装在模板类中，简化了对Redis的使用</li>
+<li>集成了Spring的事务管理机制，可以方便的进行事务控制</li>
+</ol>
+<h2 id="使用Redission分布式锁"><a href="#使用Redission分布式锁" class="headerlink" title="使用Redission分布式锁"></a>使用Redission分布式锁</h2><p>Redission实现了RLock接口和RReadWriteLock接口来实现分布式锁和分布式读写锁</p>
+<figure class="highlight reasonml"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br><span class="line">18</span><br></pre></td><td class="code"><pre><code class="hljs reasonml"><span class="hljs-comment">// 获取分布式锁对象</span><br>RLock lock = redisson.get<span class="hljs-constructor">Lock(<span class="hljs-string">&quot;myLock&quot;</span>)</span>;<br><span class="hljs-keyword">try</span> &#123;<br>    <span class="hljs-comment">// 尝试获取锁，如果获取成功则执行临界区代码</span><br>    <span class="hljs-keyword">if</span> (lock.<span class="hljs-keyword">try</span><span class="hljs-constructor">Lock()</span>) &#123;<br>        <span class="hljs-comment">// 执行临界区代码</span><br>        <span class="hljs-module-access"><span class="hljs-module"><span class="hljs-identifier">System</span>.</span></span>out.println(<span class="hljs-string">&quot;获取到锁，执行临界区代码&quot;</span>);<br>        <span class="hljs-module-access"><span class="hljs-module"><span class="hljs-identifier">Thread</span>.</span></span>sleep(<span class="hljs-number">1000</span>); <span class="hljs-comment">// 模拟临界区代码的执行时间</span><br>    &#125; <span class="hljs-keyword">else</span> &#123;<br>        <span class="hljs-comment">// 未获取到锁，执行其他逻辑</span><br>        <span class="hljs-module-access"><span class="hljs-module"><span class="hljs-identifier">System</span>.</span></span>out.println(<span class="hljs-string">&quot;未获取到锁，执行其他逻辑&quot;</span>);<br>    &#125;<br>&#125; catch (InterruptedException e) &#123;<br>    e.print<span class="hljs-constructor">StackTrace()</span>;<br>&#125; finally &#123;<br>    <span class="hljs-comment">// 释放锁</span><br>    lock.unlock<span class="hljs-literal">()</span>;<br>&#125;<br></code></pre></td></tr></table></figure>
+<h2 id="源码简析"><a href="#源码简析" class="headerlink" title="源码简析"></a>源码简析</h2><h3 id="获取分布式锁"><a href="#获取分布式锁" class="headerlink" title="获取分布式锁"></a>获取分布式锁</h3><figure class="highlight reasonml"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br></pre></td><td class="code"><pre><code class="hljs reasonml">public RLock get<span class="hljs-constructor">Lock(String <span class="hljs-params">name</span>)</span> &#123;<br>        return <span class="hljs-keyword">new</span> <span class="hljs-constructor">RedissonLock(<span class="hljs-params">commandExecutor</span>, <span class="hljs-params">name</span>)</span>;<br>    &#125;<br></code></pre></td></tr></table></figure>
+<p>在获取分布式锁的时候，会新建一个RedissonLock对象，该对象的构造方法有两个参数，其中commandExecutor是Redission提供的一个接口，用于执行异步的Redis命令，name表示获取锁的名称。RedissionLock负责处理分布式锁的各种操作，使用我们的代码中getLock方法会拿到一个RedissionLock对象，然后使用该对象的tryLock()方法来尝试获取锁。tryLock()是非阻塞的获取锁，lock()是阻塞式的获取锁。</p>
+<figure class="highlight arduino"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br></pre></td><td class="code"><pre><code class="hljs arduino"><span class="hljs-function"><span class="hljs-keyword">public</span> <span class="hljs-keyword">boolean</span> <span class="hljs-title">tryLock</span><span class="hljs-params">()</span> </span>&#123;<br>        <span class="hljs-keyword">return</span> <span class="hljs-built_in">get</span>(tryLockAsync());<br>    &#125;<br></code></pre></td></tr></table></figure>
+<p>tryLockAsync()方法执行获取锁的操作，但该方法是异步执行的，所以用get方法再来获取结果。源代码中tryLockAsync()方法实际上在执行下面的操作：</p>
+<figure class="highlight typescript"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br><span class="line">18</span><br><span class="line">19</span><br><span class="line">20</span><br><span class="line">21</span><br><span class="line">22</span><br></pre></td><td class="code"><pre><code class="hljs typescript"><span class="hljs-keyword">private</span> RFuture&lt;<span class="hljs-built_in">Boolean</span>&gt; <span class="hljs-function"><span class="hljs-title">tryAcquireOnceAsync</span>(<span class="hljs-params">long waitTime, long leaseTime, TimeUnit unit, long threadId</span>)</span> &#123;<br>        RFuture&lt;<span class="hljs-built_in">Boolean</span>&gt; acquiredFuture;<br>        <span class="hljs-keyword">if</span> (leaseTime &gt; <span class="hljs-number">0</span>) &#123;<br>            acquiredFuture = tryLockInnerAsync(waitTime, leaseTime, unit, threadId, RedisCommands.EVAL_NULL_BOOLEAN);<br>        &#125; <span class="hljs-keyword">else</span> &#123;<br>            acquiredFuture = tryLockInnerAsync(waitTime, internalLockLeaseTime,<br>                    TimeUnit.MILLISECONDS, threadId, RedisCommands.EVAL_NULL_BOOLEAN);<br>        &#125;<br><br>        CompletionStage&lt;<span class="hljs-built_in">Boolean</span>&gt; f = acquiredFuture.thenApply(acquired -&gt; &#123;<br>            <span class="hljs-comment">// lock acquired</span><br>            <span class="hljs-keyword">if</span> (acquired) &#123;<br>                <span class="hljs-keyword">if</span> (leaseTime &gt; <span class="hljs-number">0</span>) &#123;<br>                    internalLockLeaseTime = unit.toMillis(leaseTime);<br>                &#125; <span class="hljs-keyword">else</span> &#123;<br>                    scheduleExpirationRenewal(threadId);<br>                &#125;<br>            &#125;<br>            <span class="hljs-keyword">return</span> acquired;<br>        &#125;);<br>        <span class="hljs-keyword">return</span> <span class="hljs-keyword">new</span> CompletableFutureWrapper&lt;&gt;(f);<br>    &#125;<br></code></pre></td></tr></table></figure>
+<p>其中参数含义为：</p>
+<ul>
+<li>waitTime: 等待获取锁的最大时间</li>
+<li>leaseTime: 获取锁后持有的时间</li>
+<li>unit: 时间单位</li>
+<li>threadId: 线程ID</li>
+</ul>
+<p>方法内部：</p>
+<ol>
+<li>实际执行是tryLockInnerAsync()方法，但根据leaseTime的值会使用不同的参数，具体来说，当leaseTime大于0时，会直接使用该值，如果小于等于0（即不会主动释放锁），则会使用配置里面的值。</li>
+<li>处理获取到锁的结果：<ul>
+<li>如果获取锁成功，则根据leaseTime的值更新内部的锁持有时间：<ul>
+<li>leaseTime &gt; 0，更新锁的持有时间</li>
+<li>leaseTime &lt; 0, 调用scheduleExpirationRenewal()方法定时续期锁的持有时间</li>
+</ul>
+</li>
+<li>返回获取锁的结果</li>
+</ul>
+</li>
+</ol>
+<p>再来分析核心方法tryLockInnerAsync()</p>
+<figure class="highlight reasonml"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br></pre></td><td class="code"><pre><code class="hljs reasonml">&lt;T&gt; RFuture&lt;T&gt; <span class="hljs-keyword">try</span><span class="hljs-constructor">LockInnerAsync(<span class="hljs-params">long</span> <span class="hljs-params">waitTime</span>, <span class="hljs-params">long</span> <span class="hljs-params">leaseTime</span>, TimeUnit <span class="hljs-params">unit</span>, <span class="hljs-params">long</span> <span class="hljs-params">threadId</span>, RedisStrictCommand&lt;T&gt; <span class="hljs-params">command</span>)</span> &#123;<br>        return eval<span class="hljs-constructor">WriteAsync(<span class="hljs-params">getRawName</span>()</span>, LongCodec.INSTANCE, command,<br>                <span class="hljs-string">&quot;if (redis.call(&#x27;exists&#x27;, KEYS[1]) == 0) then &quot;</span> +<br>                        <span class="hljs-string">&quot;redis.call(&#x27;hincrby&#x27;, KEYS[1], ARGV[2], 1); &quot;</span> +<br>                        <span class="hljs-string">&quot;redis.call(&#x27;pexpire&#x27;, KEYS[1], ARGV[1]); &quot;</span> +<br>                        <span class="hljs-string">&quot;return nil; &quot;</span> +<br>                        <span class="hljs-string">&quot;end; &quot;</span> +<br>                        <span class="hljs-string">&quot;if (redis.call(&#x27;hexists&#x27;, KEYS[1], ARGV[2]) == 1) then &quot;</span> +<br>                        <span class="hljs-string">&quot;redis.call(&#x27;hincrby&#x27;, KEYS[1], ARGV[2], 1); &quot;</span> +<br>                        <span class="hljs-string">&quot;redis.call(&#x27;pexpire&#x27;, KEYS[1], ARGV[1]); &quot;</span> +<br>                        <span class="hljs-string">&quot;return nil; &quot;</span> +<br>                        <span class="hljs-string">&quot;end; &quot;</span> +<br>                        <span class="hljs-string">&quot;return redis.call(&#x27;pttl&#x27;, KEYS[1]);&quot;</span>,<br>                <span class="hljs-module-access"><span class="hljs-module"><span class="hljs-identifier">Collections</span>.</span></span>singleton<span class="hljs-constructor">List(<span class="hljs-params">getRawName</span>()</span>), <span class="hljs-built_in">unit</span>.<span class="hljs-keyword">to</span><span class="hljs-constructor">Millis(<span class="hljs-params">leaseTime</span>)</span>, get<span class="hljs-constructor">LockName(<span class="hljs-params">threadId</span>)</span>);<br>    &#125;<br></code></pre></td></tr></table></figure>
+<p>到这里就很容易看出来，其实该方法也是使用Redis的EVAL命令执行一段lua脚本来尝试获取锁，lua脚本的逻辑为：</p>
+<ol>
+<li>使用exists命令检查锁的键KEYS[1]是否存在，如果不存在则说明锁可用，使用hincrby命令对锁的键进行初始化，并使用pexpire命令设置锁的过期时间，然后返回nil表示获取锁成功。</li>
+<li>如果锁的键KEYS[1]已经存在，则使用hexists命令检查当前线程是否已经持有该锁。如果已持有，使用hincrby命令对锁的键进行更新，并使用pexpire命令重置锁的过期时间，然后返回nil表示获取锁成功。</li>
+<li>如果锁的键已存在且当前线程未持有该锁，则使用pttl命令返回锁的剩余过期时间</li>
+</ol>
+<h3 id="问题与思考"><a href="#问题与思考" class="headerlink" title="问题与思考"></a>问题与思考</h3><ol>
+<li>为什么要用hincrby而不是hset<ul>
+<li>如果使用hset命令设置锁的键，表示当前线程持有锁，那么其他线程需要等待锁释放。但是，在多线程环境中，多个线程可能同时执行到hset命令，导致多个线程都尝试设置锁的键，最终只有一个线程的设置会成功，其他线程会失败。这样就会产生竞态条件，导致多个线程同时认为自己获得了锁，造成问题。</li>
+<li>相比于hset命令，hincrby命令具备原子性。通过使用hincrby命令，可以在设置锁的键之前先检查是否已经存在锁的键，如果已存在，则说明锁被其他线程持有，当前线程无法获取锁；如果不存在，则通过hincrby命令设置锁的键，并且可以确保在多线程环境中只有一个线程的设置成功，其他线程会失败。这样就避免了竞态条件的发生。</li>
+</ul>
+</li>
+</ol>
+
+
+      
+
+    </section>
+    
+      <section class='ArticleMeta'>
+          <div>
+            发布于&nbsp;
+            <time datetime="2023-05-17T08:35:45.000Z" itemprop="datePublished">
+              2023-05-17
+            </time>
+          </div>
+          
+      </section>
+    
+    
+</article>
+
+  
+</div>
+
+            <footer>
+    <div>© 2023 - Levi </div>
+    <div>
+        <span>
+<!--            Powered by <a target="_blank" rel="noopener" href="https://hexo.io">Hexo</a>-->
+            Homo sum, humani nihil a me alienum puto
+        </span>
+    </div>
+<!--    {% if theme.footer.counter %}-->
+    <script async src="//busuanzi.ibruce.info/busuanzi/2.3/busuanzi.pure.mini.js"></script>
+    <span id="busuanzi_container_site_pv">Views <span id="busuanzi_value_site_pv"></span> </span>
+    <span class="post-meta-divider">|</span>
+    <span id="busuanzi_container_site_uv">Visitors <span id="busuanzi_value_site_uv"></span> </span>
+<!--    {% endif %}-->
+</footer>
+
+        </div>
+    </div>
+</div>
+
+<script src="/blog/js/pager/dist/singlepager.js"></script>
+
+<script>
+var sp = new Pager('data-pager-shell')
+
+</script>
+</body>
+</html>
